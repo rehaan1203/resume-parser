@@ -1,0 +1,9 @@
+
+            Provide specific, actionable Career Transition ATS optimization tips for a candidate moving from Lawyer/Legal Professional to Software Engineer.
+            Missing technical skills: Docker, Kubernetes, AWS
+            
+            Output format exactly:
+            1. 'keywords': A list of foundational keywords they should learn and add (e.g., "Add 'Python' to Core Competencies").
+            2. 'phrasing': A list of objects with 'original' and 'suggested' bullet points demonstrating how to translate Lawyer/Legal Professional experience into transferable skills for Software Engineer.
+            3. 'formatting_tips': 2-3 standard ATS formatting tips (e.g. use functional resume format).
+            

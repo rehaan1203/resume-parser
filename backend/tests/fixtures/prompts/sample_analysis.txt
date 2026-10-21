@@ -1,0 +1,20 @@
+Analyze the friction between this resume and job description. Be specific and critical.
+
+RESUME:
+{resume}
+
+JOB DESCRIPTION:
+{jd}
+
+Return a JSON object with:
+{{
+  "overall_score": 0,
+  "friction_points": [
+    {{"category": "skills|experience|education|phrasing", 
+     "severity": "critical|warning|info",
+     "description": "string",
+     "suggestion": "string"}}
+  ],
+  "skill_gaps": ["string"],
+  "strengths": ["string"]
+}}

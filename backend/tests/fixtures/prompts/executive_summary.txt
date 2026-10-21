@@ -1,0 +1,9 @@
+
+        Write a concise, professional 3-4 sentence executive summary for a candidate.
+        They scored 75% on the job match.
+        Their key strengths are: Python, FastAPI, PostgreSQL.
+        Their key skill gaps are: Docker, Kubernetes, AWS.
+        They have a seniority gap of 2 years (0 means no gap).
+        
+        Keep it objective, highlighting strengths and mentioning areas for growth. Do not invent new skills or facts.
+        

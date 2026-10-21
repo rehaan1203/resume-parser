@@ -1,0 +1,8 @@
+
+        Extract the total years of professional experience from this text.
+        Return ONLY a JSON object with a single key 'years' mapping to an integer.
+        If no experience is mentioned, return 0.
+        
+        Text:
+        Lead software developer managing distributed systems and enterprise infrastructure.
+        

@@ -1,0 +1,16 @@
+
+Generate {num_questions} interview questions based on this resume and job description.
+
+RESUME:
+{resume}
+
+JOB DESCRIPTION:
+{jd}
+
+SKILL GAPS:
+{skill_gaps}
+
+Generate a mix of technical, behavioral, and situational questions.
+Focus on areas where the candidate might have gaps or strengths.
+
+Return JSON with questions array containing category, question, expected_answer, hint, and difficulty.

@@ -1,0 +1,14 @@
+
+Provide long-term career guidance based on this resume.
+
+RESUME:
+{resume}
+
+EXPERIENCE:
+{experience}
+
+CAREER GOALS:
+{goals}
+
+Provide short-term and long-term goals, skills to develop, career paths, and salary expectations.
+Return JSON with advice object containing all recommendations.

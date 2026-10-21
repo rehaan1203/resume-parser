@@ -1,0 +1,25 @@
+
+        You are a seniority alignment analyzer.
+        
+        INPUT DATA:
+        - Your Experience: 3 years
+        - Required Experience: 5 years
+        - Your Level: Mid
+        - Required Level: Senior
+        - Experience Gap: 2 years
+        - Alignment Status: minor_gap
+        
+        TASK:
+        Generate a comprehensive seniority alignment section with:
+        
+        1. SUMMARY: A single, punchy sentence (max 15 words) explaining the gap and what it means for the candidate.
+        2. RECOMMENDATION: Specific advice on what level roles to target and how to bridge the gap.
+        3. NEXT STEPS: 3-5 actionable steps to bridge the gap.
+        
+        Return exactly this JSON schema:
+        {
+          "summary": "string",
+          "recommendation": "string",
+          "next_steps": ["string"]
+        }
+        
