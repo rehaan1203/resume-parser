@@ -3,21 +3,22 @@ import asyncio
 from typing import Dict, Any, List
 from app.ai.client import GenAIClient
 from app.utils.logger import logger
+from app.prompts.analysis import build_executive_summary_prompt, build_mismatch_prompt
+from app.prompts.ats import build_standard_ats_prompt, build_transition_ats_prompt
+from app.prompts.roadmap import build_upskill_roadmap_prompt
+from app.prompts.seniority import build_seniority_alignment_prompt
 
 class Phase3Explainer:
     def __init__(self):
         self.client = GenAIClient()
         
     async def generate_executive_summary(self, score: int, strengths: List[str], gaps: List[str], seniority_gap: int) -> str:
-        prompt = f"""
-        Write a concise, professional 3-4 sentence executive summary for a candidate.
-        They scored {score}% on the job match.
-        Their key strengths are: {', '.join(strengths[:3])}.
-        Their key skill gaps are: {', '.join(gaps[:3])}.
-        They have a seniority gap of {seniority_gap} years (0 means no gap).
-        
-        Keep it objective, highlighting strengths and mentioning areas for growth. Do not invent new skills or facts.
-        """
+        prompt = build_executive_summary_prompt(
+            score=score,
+            strengths=strengths,
+            gaps=gaps,
+            seniority_gap=seniority_gap
+        )
         
         try:
             response = await self.client.generate_structured_content(
@@ -30,10 +31,10 @@ class Phase3Explainer:
             return f"Candidate achieved a {score}% match. Key strengths include {', '.join(strengths[:3])}. Focus on developing {', '.join(gaps[:3])}."
 
     async def generate_mismatch_message(self, resume_domain: str, jd_domain: str) -> str:
-        prompt = f"""
-        Provide a concise, 2-sentence explanation of why a candidate with a {resume_domain} background is fundamentally mismatched for a {jd_domain} role. 
-        Focus on the completely different core competencies and daily responsibilities required.
-        """
+        prompt = build_mismatch_prompt(
+            resume_domain=resume_domain,
+            jd_domain=jd_domain
+        )
         try:
             response = await self.client.generate_structured_content(
                 prompt=prompt,
@@ -49,27 +50,13 @@ class Phase3Explainer:
         if is_mismatch:
             resume_domain = domain_analysis.get("resume_domain", "").replace("_", " ").title()
             jd_domain = domain_analysis.get("jd_domain", "").replace("_", " ").title()
-            prompt = f"""
-            Provide specific, actionable Career Transition ATS optimization tips for a candidate moving from {resume_domain} to {jd_domain}.
-            Missing technical skills: {', '.join(gaps)}
-            
-            Output format exactly:
-            1. 'keywords': A list of foundational keywords they should learn and add (e.g., "Add 'Python' to Core Competencies").
-            2. 'phrasing': A list of objects with 'original' and 'suggested' bullet points demonstrating how to translate {resume_domain} experience into transferable skills for {jd_domain}.
-            3. 'formatting_tips': 2-3 standard ATS formatting tips (e.g. use functional resume format).
-            """
+            prompt = build_transition_ats_prompt(
+                resume_domain=resume_domain,
+                jd_domain=jd_domain,
+                gaps=gaps
+            )
         else:
-            prompt = f"""
-        Provide specific, actionable ATS optimization tips based on the candidate's skill gaps.
-        Skill gaps: {', '.join(gaps)}
-        
-        Output format exactly:
-        1. 'keywords': A list of specific keywords they should add (e.g., "Add 'Technology Law' to Core Competencies").
-        2. 'phrasing': A list of objects with 'original' and 'suggested' bullet points demonstrating how to rewrite experience to highlight the missing skills.
-        3. 'formatting_tips': 2-3 standard ATS formatting tips.
-        
-        Do not invent requirements not related to the gaps.
-        """
+            prompt = build_standard_ats_prompt(gaps=gaps)
         
         try:
             return await self.client.generate_structured_content(
@@ -101,24 +88,7 @@ class Phase3Explainer:
         elif gap_type == "career_change":
             weeks_count = 12
             
-        prompt = f"""
-        Generate a highly structured, non-repeating learning roadmap for a candidate missing these skills: {', '.join(gaps)}.
-        The roadmap must be EXACTLY {weeks_count} weeks long. Every single day in those weeks must have unique content and at least one real-world resource link (e.g., Coursera, YouTube, official docs).
-        
-        CRITICAL TOKEN LIMIT: To prevent truncation for long {weeks_count}-week roadmaps, you MUST keep every 'action' description concise (under 20 words) and provide 1-2 highly relevant URLs per day. Do not add any extra commentary.
-        
-        Output format:
-        - type: "{gap_type}"
-        - title: "Upskill Roadmap ({weeks_count} Weeks)"
-        - weeks: List of week objects, each containing:
-            - week: week number
-            - focus: week theme
-            - days: List of 7 day objects (for that week), each containing:
-                - day: absolute day number (1, 2, ..., {weeks_count * 7})
-                - action: what to do
-                - resources: list of URLs
-                - estimated_time: string (e.g., "2 hours")
-        """
+        prompt = build_upskill_roadmap_prompt(gaps=gaps, gap_type=gap_type)
         
         try:
             return await self.client.generate_structured_content(
@@ -193,31 +163,14 @@ class Phase3Explainer:
             alignment_status = "significant_gap"
             badge = "🔴 SIGNIFICANT GAP"
 
-        prompt = f"""
-        You are a seniority alignment analyzer.
-        
-        INPUT DATA:
-        - Your Experience: {years_experience} years
-        - Required Experience: {required_years} years
-        - Your Level: {your_level}
-        - Required Level: {required_level}
-        - Experience Gap: {gap} years
-        - Alignment Status: {alignment_status}
-        
-        TASK:
-        Generate a comprehensive seniority alignment section with:
-        
-        1. SUMMARY: A single, punchy sentence (max 15 words) explaining the gap and what it means for the candidate.
-        2. RECOMMENDATION: Specific advice on what level roles to target and how to bridge the gap.
-        3. NEXT STEPS: 3-5 actionable steps to bridge the gap.
-        
-        Return exactly this JSON schema:
-        {{
-          "summary": "string",
-          "recommendation": "string",
-          "next_steps": ["string"]
-        }}
-        """
+        prompt = build_seniority_alignment_prompt(
+            years_experience=years_experience,
+            required_years=required_years,
+            your_level=your_level,
+            required_level=required_level,
+            gap=gap,
+            alignment_status=alignment_status
+        )
         
         try:
             result = await self.client.generate_structured_content(

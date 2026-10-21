@@ -130,3 +130,5 @@ Return ONLY this JSON object:
 }}
 
 Ensure all 30 days are covered (weeks 1-4, days 1-30)."""
+
+ROADMAP_PROMPT = THIRTY_DAY_ROADMAP_PROMPT
