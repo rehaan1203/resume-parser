@@ -2,8 +2,8 @@
 import json
 from typing import List, Dict, Any
 from app.ai.client import GenAIClient
-from app.prompts.analysis import FRICTION_ANALYSIS_PROMPT, SAMPLE_ANALYSIS_PROMPT
-from app.prompts.roadmap import THIRTY_DAY_ROADMAP_PROMPT
+from app.prompts.analysis_prompt import FRICTION_ANALYSIS_PROMPT, SAMPLE_ANALYSIS_PROMPT
+from app.prompts.roadmap_prompt import THIRTY_DAY_ROADMAP_PROMPT
 from app.utils.logger import logger
 
 class LLMService:

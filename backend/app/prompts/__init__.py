@@ -1,6 +1,6 @@
 """Public interface for the prompts package."""
-from app.prompts.base import SYSTEM_PROMPT, SYSTEM_PROMPT_VERSION, STRICT_JSON_INSTRUCTION
-from app.prompts.analysis import (
+from app.prompts.base_prompt import SYSTEM_PROMPT, SYSTEM_PROMPT_VERSION, STRICT_JSON_INSTRUCTION
+from app.prompts.analysis_prompt import (
     build_executive_summary_prompt,
     build_mismatch_prompt,
     FRICTION_ANALYSIS_PROMPT,
@@ -10,7 +10,7 @@ from app.prompts.analysis import (
     FRICTION_ANALYSIS_PROMPT_VERSION,
     SAMPLE_ANALYSIS_PROMPT_VERSION
 )
-from app.prompts.roadmap import (
+from app.prompts.roadmap_prompt import (
     build_upskill_roadmap_prompt,
     build_transition_roadmap_prompt,
     get_roadmap_weeks_count,
@@ -19,7 +19,7 @@ from app.prompts.roadmap import (
     TRANSITION_ROADMAP_PROMPT_VERSION,
     THIRTY_DAY_ROADMAP_PROMPT_VERSION
 )
-from app.prompts.ats import (
+from app.prompts.ats_prompt import (
     build_standard_ats_prompt,
     build_transition_ats_prompt,
     build_transition_tips_prompt,
@@ -29,15 +29,15 @@ from app.prompts.ats import (
     TRANSITION_TIPS_PROMPT_VERSION,
     ATS_OPTIMIZATION_PROMPT_VERSION
 )
-from app.prompts.seniority import (
+from app.prompts.seniority_prompt import (
     build_seniority_alignment_prompt,
     SENIORITY_ALIGNMENT_PROMPT_VERSION
 )
-from app.prompts.extraction import (
+from app.prompts.extraction_prompt import (
     build_experience_extraction_prompt,
     EXPERIENCE_EXTRACTION_PROMPT_VERSION
 )
-from app.prompts.career import (
+from app.prompts.career_prompt import (
     INTERVIEW_QUESTIONS_PROMPT,
     CAREER_ADVICE_PROMPT,
     INTERVIEW_QUESTIONS_PROMPT_VERSION,

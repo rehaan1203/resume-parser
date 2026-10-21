@@ -1,29 +1,29 @@
 """Comprehensive render comparison tests asserting 100% byte-for-byte parity against fixtures."""
 from pathlib import Path
 
-from app.prompts.base import SYSTEM_PROMPT
-from app.prompts.analysis import (
+from app.prompts.base_prompt import SYSTEM_PROMPT
+from app.prompts.analysis_prompt import (
     build_executive_summary_prompt,
     build_mismatch_prompt,
     FRICTION_ANALYSIS_PROMPT,
     SAMPLE_ANALYSIS_PROMPT,
 )
-from app.prompts.roadmap import (
+from app.prompts.roadmap_prompt import (
     build_upskill_roadmap_prompt,
     build_transition_roadmap_prompt,
     THIRTY_DAY_ROADMAP_PROMPT,
 )
-from app.prompts.ats import (
+from app.prompts.ats_prompt import (
     build_standard_ats_prompt,
     build_transition_ats_prompt,
     build_transition_tips_prompt,
     ATS_OPTIMIZATION_PROMPT,
 )
-from app.prompts.seniority import build_seniority_alignment_prompt
-from app.prompts.extraction import (
+from app.prompts.seniority_prompt import build_seniority_alignment_prompt
+from app.prompts.extraction_prompt import (
     build_experience_extraction_prompt,
 )
-from app.prompts.career import (
+from app.prompts.career_prompt import (
     INTERVIEW_QUESTIONS_PROMPT,
     CAREER_ADVICE_PROMPT,
 )

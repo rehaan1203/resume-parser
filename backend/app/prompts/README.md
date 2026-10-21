@@ -14,13 +14,13 @@ This package houses all prompt templates, builder functions, and domain-specific
 
 | Module | Responsibility | Key Exports |
 | :--- | :--- | :--- |
-| `base.py` | System prompt & shared core instructions | `SYSTEM_PROMPT`, `STRICT_JSON_INSTRUCTION` |
-| `analysis.py` | Candidate matching, executive summaries, domain mismatch | `build_executive_summary_prompt()`, `build_mismatch_prompt()`, `FRICTION_ANALYSIS_PROMPT`, `SAMPLE_ANALYSIS_PROMPT` |
-| `roadmap.py` | 30-day, upskill, and career transition roadmaps | `build_upskill_roadmap_prompt()`, `build_transition_roadmap_prompt()`, `get_roadmap_weeks_count()`, `THIRTY_DAY_ROADMAP_PROMPT` |
-| `ats.py` | Standard, transition, and advanced ATS optimization | `build_standard_ats_prompt()`, `build_transition_ats_prompt()`, `build_transition_tips_prompt()`, `ATS_OPTIMIZATION_PROMPT` |
-| `seniority.py` | Seniority alignment and level gap analysis | `build_seniority_alignment_prompt()` |
-| `extraction.py` | Candidate experience extraction LLM fallbacks | `build_experience_extraction_prompt()` |
-| `career.py` | Long-term career guidance & interview question generation | `INTERVIEW_QUESTIONS_PROMPT`, `CAREER_ADVICE_PROMPT` |
+| `base_prompt.py` | System prompt & shared core instructions | `SYSTEM_PROMPT`, `STRICT_JSON_INSTRUCTION` |
+| `analysis_prompt.py` | Candidate matching, executive summaries, domain mismatch | `build_executive_summary_prompt()`, `build_mismatch_prompt()`, `FRICTION_ANALYSIS_PROMPT`, `SAMPLE_ANALYSIS_PROMPT` |
+| `roadmap_prompt.py` | 30-day, upskill, and career transition roadmaps | `build_upskill_roadmap_prompt()`, `build_transition_roadmap_prompt()`, `get_roadmap_weeks_count()`, `THIRTY_DAY_ROADMAP_PROMPT` |
+| `ats_prompt.py` | Standard, transition, and advanced ATS optimization | `build_standard_ats_prompt()`, `build_transition_ats_prompt()`, `build_transition_tips_prompt()`, `ATS_OPTIMIZATION_PROMPT` |
+| `seniority_prompt.py` | Seniority alignment and level gap analysis | `build_seniority_alignment_prompt()` |
+| `extraction_prompt.py` | Candidate experience extraction LLM fallbacks | `build_experience_extraction_prompt()` |
+| `career_prompt.py` | Long-term career guidance & interview question generation | `INTERVIEW_QUESTIONS_PROMPT`, `CAREER_ADVICE_PROMPT` |
 
 ---
 
@@ -41,8 +41,8 @@ from app.prompts import (
 Or from their specific domain submodules:
 
 ```python
-from app.prompts.analysis import build_executive_summary_prompt
-from app.prompts.roadmap import build_upskill_roadmap_prompt
+from app.prompts.analysis_prompt import build_executive_summary_prompt
+from app.prompts.roadmap_prompt import build_upskill_roadmap_prompt
 ```
 
 ---

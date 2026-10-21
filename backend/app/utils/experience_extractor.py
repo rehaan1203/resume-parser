@@ -5,7 +5,7 @@ from typing import Dict, Any, Optional
 from app.utils.logger import logger
 from app.utils.cache_manager import CacheManager
 from app.ai.client import GenAIClient
-from app.prompts.extraction import build_experience_extraction_prompt
+from app.prompts.extraction_prompt import build_experience_extraction_prompt
 
 async def extract_years_experience(text: str) -> int:
     """Extract years of experience from text using regex, fallback to LLM if needed."""

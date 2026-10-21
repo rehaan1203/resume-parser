@@ -3,8 +3,8 @@ from pydantic import BaseModel, Field
 from typing import Optional, List
 from app.ai.client import GenAIClient
 from app.utils.logger import logger
-from app.prompts.roadmap import build_transition_roadmap_prompt
-from app.prompts.ats import build_transition_tips_prompt
+from app.prompts.roadmap_prompt import build_transition_roadmap_prompt
+from app.prompts.ats_prompt import build_transition_tips_prompt
 
 router = APIRouter()
 

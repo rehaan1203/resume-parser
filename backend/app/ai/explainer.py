@@ -3,10 +3,10 @@ import asyncio
 from typing import Dict, Any, List
 from app.ai.client import GenAIClient
 from app.utils.logger import logger
-from app.prompts.analysis import build_executive_summary_prompt, build_mismatch_prompt
-from app.prompts.ats import build_standard_ats_prompt, build_transition_ats_prompt
-from app.prompts.roadmap import build_upskill_roadmap_prompt, get_roadmap_weeks_count
-from app.prompts.seniority import build_seniority_alignment_prompt
+from app.prompts.analysis_prompt import build_executive_summary_prompt, build_mismatch_prompt
+from app.prompts.ats_prompt import build_standard_ats_prompt, build_transition_ats_prompt
+from app.prompts.roadmap_prompt import build_upskill_roadmap_prompt, get_roadmap_weeks_count
+from app.prompts.seniority_prompt import build_seniority_alignment_prompt
 
 class Phase3Explainer:
     def __init__(self):
