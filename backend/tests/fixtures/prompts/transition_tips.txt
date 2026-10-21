@@ -1,0 +1,36 @@
+
+You are a career coach providing transition resources for someone moving from Lawyer/Legal Professional to Software Engineer.
+
+## Resume: Sample resume text for candidate with 5 years experience...
+## Job Description: Sample job description text for Senior Engineer...
+
+### CRITICAL RULES:
+1. Return ONLY transition resources
+2. Include ACTUAL working links for each resource
+3. Use real, verified URLs
+4. Prefer free resources where possible
+
+### Resource Types:
+- Education: Free/paid courses with links
+- Certifications: Certification programs with links
+- Portfolio: Platforms and tools with links
+- Resume Strategy: General advice (no links needed)
+
+### Return ONLY this JSON:
+{
+    "education": [
+        {"name": "Course Name", "platform": "Platform", "url": "https://..."},
+        {"name": "Course Name", "platform": "Platform", "url": "https://..."}
+    ],
+    "certifications": [
+        {"name": "Certification Name", "provider": "Provider", "url": "https://..."},
+        {"name": "Certification Name", "provider": "Provider", "url": "https://..."}
+    ],
+    "portfolio": [
+        {"name": "Resource Name", "description": "What it is", "url": "https://..."}
+    ],
+    "resume_strategy": [
+        "Advice 1",
+        "Advice 2"
+    ]
+}

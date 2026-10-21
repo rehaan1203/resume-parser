@@ -1,0 +1,24 @@
+Analyze the semantic friction between this resume and job description.
+
+RESUME:
+{resume}
+
+JOB DESCRIPTION:
+{jd}
+
+FRICTION POINTS IDENTIFIED (from embedding analysis):
+{friction_points}
+
+Provide a detailed analysis with:
+1. Missing skills and qualifications (list 3-5 specific skills)
+2. Phrasing mismatches (where the resume says X but JD expects Y, list 2-3)
+3. Experience level gaps (if any)
+4. Actionable suggestions for improvement (list 3-5 specific actions)
+
+Format as JSON with this exact structure:
+{{
+  "skill_gaps": ["string"],
+  "phrasing_mismatches": [{{"resume_phrase": "string", "jd_phrase": "string", "suggestion": "string"}}],
+  "experience_analysis": {{"gap": "string", "suggestion": "string"}},
+  "improvement_suggestions": ["string"]
+}}

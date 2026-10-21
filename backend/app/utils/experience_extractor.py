@@ -5,6 +5,7 @@ from typing import Dict, Any, Optional
 from app.utils.logger import logger
 from app.utils.cache_manager import CacheManager
 from app.ai.client import GenAIClient
+from app.prompts.extraction_prompt import build_experience_extraction_prompt
 
 async def extract_years_experience(text: str) -> int:
     """Extract years of experience from text using regex, fallback to LLM if needed."""
@@ -51,14 +52,7 @@ async def extract_years_experience(text: str) -> int:
     # 2. Call LLM
     try:
         client = GenAIClient()
-        prompt = f"""
-        Extract the total years of professional experience from this text.
-        Return ONLY a JSON object with a single key 'years' mapping to an integer.
-        If no experience is mentioned, return 0.
-        
-        Text:
-        {text[:3000]}
-        """
+        prompt = build_experience_extraction_prompt(text)
         response = await client.generate_structured_content(
             prompt=prompt,
             output_schema={"years": 0}

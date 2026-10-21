@@ -1,7 +1,7 @@
 """ATS optimization suggestions for resumes."""
 from typing import List, Dict, Any
 from app.ai.client import GenAIClient
-from app.prompts.system_prompts import ATS_OPTIMIZATION_PROMPT
+from app.prompts.ats_prompt import ATS_OPTIMIZATION_PROMPT
 from app.utils.logger import logger
 
 class ATSOptimizer:

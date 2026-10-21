@@ -2,12 +2,8 @@
 import json
 from typing import List, Dict, Any
 from app.ai.client import GenAIClient
-from app.prompts.system_prompts import (
-    SYSTEM_PROMPT,
-    FRICTION_ANALYSIS_PROMPT,
-    ROADMAP_PROMPT,
-    SAMPLE_ANALYSIS_PROMPT
-)
+from app.prompts.analysis_prompt import FRICTION_ANALYSIS_PROMPT, SAMPLE_ANALYSIS_PROMPT
+from app.prompts.roadmap_prompt import THIRTY_DAY_ROADMAP_PROMPT
 from app.utils.logger import logger
 
 class LLMService:
@@ -73,7 +69,7 @@ class LLMService:
         """Generate structured learning roadmap."""
         try:
             # Prepare prompt
-            prompt = ROADMAP_PROMPT.format(
+            prompt = THIRTY_DAY_ROADMAP_PROMPT.format(
                 days=days,
                 gaps="\n".join(f"- {gap}" for gap in skill_gaps[:5]),
                 strengths="\n".join(f"- {strength}" for strength in strengths[:3])

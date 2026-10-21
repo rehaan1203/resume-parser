@@ -1,0 +1,58 @@
+
+You are a career coach creating a transition roadmap for someone moving from Lawyer/Legal Professional to Software Engineer.
+
+## Resume: Sample resume text for candidate with 5 years experience...
+## Job Description: Sample job description text for Senior Engineer...
+
+### CRITICAL RULES:
+1. This is a COMPLETE CAREER TRANSITION (12-18 months)
+2. Return ONLY transition content
+3. NO skill gaps (they have no skills in the target domain)
+4. NO ATS optimization tips
+5. NO seniority comparison
+
+### Return ONLY this JSON:
+{
+    "type": "career_change",
+    "title": "Career Change: Lawyer/Legal Professional → Software Engineer",
+    "estimated_timeline": "12-18 months",
+    "phases": [
+        {
+            "phase": 1,
+            "duration": "3-4 months",
+            "focus": "Foundational Skills",
+            "activities": [
+                "Learn core Software Engineer concepts",
+                "Build foundational Software Engineer skills"
+            ]
+        },
+        {
+            "phase": 2,
+            "duration": "4-6 months",
+            "focus": "Core Domain Skills",
+            "activities": [
+                "Master Software Engineer fundamentals",
+                "Practice with real-world projects"
+            ]
+        },
+        {
+            "phase": 3,
+            "duration": "3-4 months",
+            "focus": "Advanced Topics & Specialization",
+            "activities": [
+                "Learn advanced Software Engineer techniques",
+                "Specialize in specific areas"
+            ]
+        },
+        {
+            "phase": 4,
+            "duration": "2-4 months",
+            "focus": "Portfolio & Job Search",
+            "activities": [
+                "Build comprehensive portfolio",
+                "Apply to junior roles",
+                "Network in the industry"
+            ]
+        }
+    ]
+}

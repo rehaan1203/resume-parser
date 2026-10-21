@@ -1,7 +1,7 @@
 """Long-term career guidance based on resume analysis."""
 from typing import Dict, Any
 from app.ai.client import GenAIClient
-from app.prompts.system_prompts import CAREER_ADVICE_PROMPT
+from app.prompts.career_prompt import CAREER_ADVICE_PROMPT
 from app.utils.logger import logger
 
 class CareerAdvisor:

@@ -1,0 +1,11 @@
+
+        Provide specific, actionable ATS optimization tips based on the candidate's skill gaps.
+        Skill gaps: Docker, Kubernetes, AWS
+        
+        Output format exactly:
+        1. 'keywords': A list of specific keywords they should add (e.g., "Add 'Technology Law' to Core Competencies").
+        2. 'phrasing': A list of objects with 'original' and 'suggested' bullet points demonstrating how to rewrite experience to highlight the missing skills.
+        3. 'formatting_tips': 2-3 standard ATS formatting tips.
+        
+        Do not invent requirements not related to the gaps.
+        

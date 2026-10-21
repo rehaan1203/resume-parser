@@ -1,7 +1,7 @@
 """Generate interview questions based on resume and JD."""
 from typing import List, Dict, Any
 from app.ai.client import GenAIClient
-from app.prompts.system_prompts import INTERVIEW_QUESTIONS_PROMPT
+from app.prompts.career_prompt import INTERVIEW_QUESTIONS_PROMPT
 from app.utils.logger import logger
 
 class InterviewQuestionGenerator:

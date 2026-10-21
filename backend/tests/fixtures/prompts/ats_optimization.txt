@@ -1,0 +1,14 @@
+
+Optimize this resume for ATS systems based on the job description.
+
+RESUME:
+{resume}
+
+JOB DESCRIPTION:
+{jd}
+
+FRICTION POINTS:
+{friction_points}
+
+Provide specific keyword additions, phrasing improvements, and formatting tips.
+Return JSON with suggestions object containing keywords_to_add, phrasing_improvements, section_reordering, formatting_tips, and ats_score.

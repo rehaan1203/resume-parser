@@ -1,0 +1,18 @@
+
+        Generate a highly structured, non-repeating learning roadmap for a candidate missing these skills: Docker, Kubernetes, AWS.
+        The roadmap must be EXACTLY 4 weeks long. Every single day in those weeks must have unique content and at least one real-world resource link (e.g., Coursera, YouTube, official docs).
+        
+        CRITICAL TOKEN LIMIT: To prevent truncation for long 4-week roadmaps, you MUST keep every 'action' description concise (under 20 words) and provide 1-2 highly relevant URLs per day. Do not add any extra commentary.
+        
+        Output format:
+        - type: "standard_upskill"
+        - title: "Upskill Roadmap (4 Weeks)"
+        - weeks: List of week objects, each containing:
+            - week: week number
+            - focus: week theme
+            - days: List of 7 day objects (for that week), each containing:
+                - day: absolute day number (1, 2, ..., 28)
+                - action: what to do
+                - resources: list of URLs
+                - estimated_time: string (e.g., "2 hours")
+        
