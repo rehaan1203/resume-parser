@@ -5,7 +5,7 @@ from app.ai.client import GenAIClient
 from app.utils.logger import logger
 from app.prompts.analysis import build_executive_summary_prompt, build_mismatch_prompt
 from app.prompts.ats import build_standard_ats_prompt, build_transition_ats_prompt
-from app.prompts.roadmap import build_upskill_roadmap_prompt
+from app.prompts.roadmap import build_upskill_roadmap_prompt, get_roadmap_weeks_count
 from app.prompts.seniority import build_seniority_alignment_prompt
 
 class Phase3Explainer:
@@ -77,17 +77,7 @@ class Phase3Explainer:
 
     async def generate_roadmap(self, gaps: List[str], gap_type: str = "standard_upskill") -> Dict[str, Any]:
         """Generate a structured learning roadmap based on gap type."""
-        
-        weeks_count = 4
-        if gap_type == "mini_upskill":
-            weeks_count = 1
-        elif gap_type == "short_upskill":
-            weeks_count = 2
-        elif gap_type == "extended_upskill":
-            weeks_count = 8
-        elif gap_type == "career_change":
-            weeks_count = 12
-            
+        weeks_count = get_roadmap_weeks_count(gap_type)
         prompt = build_upskill_roadmap_prompt(gaps=gaps, gap_type=gap_type)
         
         try:

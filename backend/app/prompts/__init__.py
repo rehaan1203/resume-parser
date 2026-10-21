@@ -13,6 +13,7 @@ from app.prompts.analysis import (
 from app.prompts.roadmap import (
     build_upskill_roadmap_prompt,
     build_transition_roadmap_prompt,
+    get_roadmap_weeks_count,
     THIRTY_DAY_ROADMAP_PROMPT,
     UPSKILL_ROADMAP_PROMPT_VERSION,
     TRANSITION_ROADMAP_PROMPT_VERSION,
@@ -34,9 +35,7 @@ from app.prompts.seniority import (
 )
 from app.prompts.extraction import (
     build_experience_extraction_prompt,
-    DOMAIN_DETECTION_PROMPT,
-    EXPERIENCE_EXTRACTION_PROMPT_VERSION,
-    DOMAIN_DETECTION_PROMPT_VERSION
+    EXPERIENCE_EXTRACTION_PROMPT_VERSION
 )
 from app.prompts.career import (
     INTERVIEW_QUESTIONS_PROMPT,
@@ -62,6 +61,7 @@ __all__ = [
     # Roadmap
     "build_upskill_roadmap_prompt",
     "build_transition_roadmap_prompt",
+    "get_roadmap_weeks_count",
     "THIRTY_DAY_ROADMAP_PROMPT",
     "UPSKILL_ROADMAP_PROMPT_VERSION",
     "TRANSITION_ROADMAP_PROMPT_VERSION",
@@ -80,9 +80,7 @@ __all__ = [
     "SENIORITY_ALIGNMENT_PROMPT_VERSION",
     # Extraction
     "build_experience_extraction_prompt",
-    "DOMAIN_DETECTION_PROMPT",
     "EXPERIENCE_EXTRACTION_PROMPT_VERSION",
-    "DOMAIN_DETECTION_PROMPT_VERSION",
     # Career
     "INTERVIEW_QUESTIONS_PROMPT",
     "CAREER_ADVICE_PROMPT",

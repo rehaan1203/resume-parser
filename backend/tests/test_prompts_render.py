@@ -22,7 +22,6 @@ from app.prompts.ats import (
 from app.prompts.seniority import build_seniority_alignment_prompt
 from app.prompts.extraction import (
     build_experience_extraction_prompt,
-    DOMAIN_DETECTION_PROMPT,
 )
 from app.prompts.career import (
     INTERVIEW_QUESTIONS_PROMPT,
@@ -200,9 +199,6 @@ def test_experience_extraction_render():
     assert rendered == read_fixture("experience_extraction.txt")
 
 
-def test_domain_detection_render():
-    assert DOMAIN_DETECTION_PROMPT == read_fixture("domain_detection.txt")
-
 
 # 7. Career Prompts
 def test_interview_questions_render():
@@ -211,3 +207,70 @@ def test_interview_questions_render():
 
 def test_career_advice_render():
     assert CAREER_ADVICE_PROMPT == read_fixture("career_advice.txt")
+
+
+# 8. Slicing & Truncation Boundary Tests
+def test_executive_summary_slicing_behavior():
+    """Verify that >3 strengths and >3 gaps are strictly sliced to exactly 3 items."""
+    long_strengths = ["S1", "S2", "S3", "S4", "S5"]
+    long_gaps = ["G1", "G2", "G3", "G4", "G5"]
+    rendered = build_executive_summary_prompt(
+        score=85,
+        strengths=long_strengths,
+        gaps=long_gaps,
+        seniority_gap=1
+    )
+    expected = build_executive_summary_prompt(
+        score=85,
+        strengths=["S1", "S2", "S3"],
+        gaps=["G1", "G2", "G3"],
+        seniority_gap=1
+    )
+    assert rendered == expected
+    assert "S1, S2, S3" in rendered
+    assert "S4" not in rendered
+    assert "G1, G2, G3" in rendered
+    assert "G4" not in rendered
+
+
+def test_transition_roadmap_truncation_behavior():
+    """Verify that resume and JD exceeding 2000 characters are strictly truncated at 2000 chars."""
+    long_resume = "R" * 3500
+    long_jd = "J" * 3500
+    rendered = build_transition_roadmap_prompt(
+        resume_domain="legal",
+        jd_domain="tech",
+        resume=long_resume,
+        jd=long_jd
+    )
+    expected = build_transition_roadmap_prompt(
+        resume_domain="legal",
+        jd_domain="tech",
+        resume="R" * 2000,
+        jd="J" * 2000
+    )
+    assert rendered == expected
+    assert f"## Resume: {'R' * 2000}\n" in rendered
+    assert f"## Job Description: {'J' * 2000}\n" in rendered
+
+
+def test_transition_tips_truncation_behavior():
+    """Verify that transition tips builder strictly truncates resume and JD at 2000 chars."""
+    long_resume = "X" * 2500
+    long_jd = "Y" * 2500
+    rendered = build_transition_tips_prompt(
+        resume_domain="legal",
+        jd_domain="tech",
+        resume=long_resume,
+        jd=long_jd
+    )
+    expected = build_transition_tips_prompt(
+        resume_domain="legal",
+        jd_domain="tech",
+        resume="X" * 2000,
+        jd="Y" * 2000
+    )
+    assert rendered == expected
+    assert f"## Resume: {'X' * 2000}\n" in rendered
+    assert f"## Job Description: {'Y' * 2000}\n" in rendered
+

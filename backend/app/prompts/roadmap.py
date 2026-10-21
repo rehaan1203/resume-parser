@@ -6,17 +6,22 @@ TRANSITION_ROADMAP_PROMPT_VERSION = "v1"
 THIRTY_DAY_ROADMAP_PROMPT_VERSION = "v1"
 
 
+def get_roadmap_weeks_count(gap_type: str = "standard_upskill") -> int:
+    """Return the duration in weeks for a given gap type."""
+    if gap_type == "mini_upskill":
+        return 1
+    elif gap_type == "short_upskill":
+        return 2
+    elif gap_type == "extended_upskill":
+        return 8
+    elif gap_type == "career_change":
+        return 12
+    return 4
+
+
 def build_upskill_roadmap_prompt(gaps: List[str], gap_type: str = "standard_upskill") -> str:
     """Build prompt for generating a structured upskilling roadmap."""
-    weeks_count = 4
-    if gap_type == "mini_upskill":
-        weeks_count = 1
-    elif gap_type == "short_upskill":
-        weeks_count = 2
-    elif gap_type == "extended_upskill":
-        weeks_count = 8
-    elif gap_type == "career_change":
-        weeks_count = 12
+    weeks_count = get_roadmap_weeks_count(gap_type)
 
     return f"""
         Generate a highly structured, non-repeating learning roadmap for a candidate missing these skills: {', '.join(gaps)}.
@@ -131,4 +136,3 @@ Return ONLY this JSON object:
 
 Ensure all 30 days are covered (weeks 1-4, days 1-30)."""
 
-ROADMAP_PROMPT = THIRTY_DAY_ROADMAP_PROMPT

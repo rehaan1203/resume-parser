@@ -1,7 +1,6 @@
-"""Prompts and builder functions for candidate experience and domain extraction fallbacks."""
+"""Prompts and builder functions for candidate experience extraction fallbacks."""
 
 EXPERIENCE_EXTRACTION_PROMPT_VERSION = "v1"
-DOMAIN_DETECTION_PROMPT_VERSION = "v1"
 
 
 def build_experience_extraction_prompt(text: str) -> str:
@@ -15,35 +14,3 @@ def build_experience_extraction_prompt(text: str) -> str:
         {text[:3000]}
         """
 
-
-DOMAIN_DETECTION_PROMPT = """
-You are a career and domain expert. Analyze the following text (from a resume or job description) and detect its primary professional domain.
-
-Text:
-{text}
-
-## Supported Domains:
-- legal
-- healthcare
-- finance
-- architecture
-- education
-- ai_ml
-- software
-- design
-- marketing
-- sales
-- hr
-- operations
-- engineering
-- science
-- unknown
-
-Return ONLY this JSON:
-{{
-    "domain": "string (must be one of the supported domains)",
-    "confidence": "integer (0-100)",
-    "evidence": ["list of string keywords found in text"],
-    "reasoning": "brief explanation of why this domain was selected"
-}}
-"""
