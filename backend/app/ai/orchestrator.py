@@ -1,6 +1,7 @@
 """Central orchestrator for the 4-Phase deterministic pipeline."""
 from typing import Dict, Any
 import asyncio
+import uuid
 
 # Phase 1
 from app.utils.experience_extractor import extract_years_experience
@@ -75,6 +76,7 @@ class DeterministicOrchestrator:
             
             await report(100, "Domain mismatch detected.")
             return {
+                "id": f"ai-{uuid.uuid4().hex[:8]}",
                 "status": "domain_mismatch",
                 "resume_domain": resume_display,
                 "jd_domain": jd_display,
@@ -210,6 +212,7 @@ class DeterministicOrchestrator:
             
         # Build raw payload
         raw_payload = {
+            "id": f"ai-{uuid.uuid4().hex[:8]}",
             "executive_summary": executive_summary,
             "overall_score": overall_score,
             "score_breakdown": {
