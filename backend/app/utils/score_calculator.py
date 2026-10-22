@@ -3,7 +3,7 @@
 def calculate_skills_score(matching_skills: int, total_jd_skills: int) -> int:
     """Calculate skill score out of 100."""
     if total_jd_skills == 0:
-        return 100
+        return 0
     return int((matching_skills / total_jd_skills) * 100)
     
 def calculate_overall_score(skills_score: int, seniority_score: int) -> int:

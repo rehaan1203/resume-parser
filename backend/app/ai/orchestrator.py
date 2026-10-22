@@ -90,12 +90,41 @@ class DeterministicOrchestrator:
         await asyncio.sleep(0.3)
         resume_skills = extract_skills(resume_text)
         jd_skills = extract_skills(jd_text)
+        skills_detected = len(jd_skills)
+
         if not jd_skills:
-            # Fallback if JD extraction yields nothing
-            jd_skills = ["Python", "Communication", "Problem Solving"]
-            
+            await report(100, "No skills detected in Job Description.")
+            return {
+                "id": f"ai-{uuid.uuid4().hex[:8]}",
+                "status": "unparseable_jd",
+                "overall_score": None,
+                "score_breakdown": {
+                    "skills_match": 0,
+                    "seniority_match": 0,
+                    "domain_match": 100 if domain_analysis.get("domain_match") else 0
+                },
+                "domain_analysis": domain_analysis,
+                "skill_analysis": {
+                    "matching_skills": [],
+                    "missing_skills": [],
+                    "skills_score": 0,
+                    "skills_detected": 0,
+                    "low_confidence": True
+                },
+                "skills_detected": 0,
+                "low_confidence": True,
+                "message": "No technical skills or core requirements could be identified in the provided Job Description. Please provide a more detailed job posting.",
+                "friction_points": [],
+                "strengths": [],
+                "skill_gaps": [],
+                "roadmap": None,
+                "ats_optimization": None
+            }
+
         matching_skills, missing_skills = compare_skills(resume_skills, jd_skills)
-        
+        from app.config import settings
+        low_confidence = skills_detected < settings.low_evidence_threshold
+
         # --- PHASE 2: Centralized Calculator ---
         await report(20, "Calculating match score...")
         await asyncio.sleep(0.3)
@@ -213,6 +242,8 @@ class DeterministicOrchestrator:
         # Build raw payload
         raw_payload = {
             "id": f"ai-{uuid.uuid4().hex[:8]}",
+            "skills_detected": skills_detected,
+            "low_confidence": low_confidence,
             "executive_summary": executive_summary,
             "overall_score": overall_score,
             "score_breakdown": {
@@ -224,7 +255,9 @@ class DeterministicOrchestrator:
             "skill_analysis": {
                 "matching_skills": matching_skills,
                 "missing_skills": missing_skills,
-                "skills_score": skills_score
+                "skills_score": skills_score,
+                "skills_detected": skills_detected,
+                "low_confidence": low_confidence
             },
             "seniority_analysis": seniority_analysis,
             "friction_points": friction_data["friction_points"],
