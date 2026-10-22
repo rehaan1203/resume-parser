@@ -50,6 +50,12 @@ export default function Home() {
         }, 300);
     };
 
+    const detectedCount = results ? (results.skillsDetected ?? results.skills_detected) : null;
+    const isCountNumber = typeof detectedCount === 'number' && !Number.isNaN(detectedCount);
+    const lowEvidenceNotice = isCountNumber
+        ? `Only ${detectedCount} recognized ${detectedCount === 1 ? 'skill was' : 'skills were'} detected in this job description.`
+        : 'Few recognized skills were detected in this job description.';
+
     return (
         <div className="w-full" ref={topRef}>
             <motion.div 
@@ -104,7 +110,7 @@ export default function Home() {
                                             <div className="flex items-center gap-3">
                                                 <AlertTriangle className="w-5 h-5 flex-shrink-0 text-amber-600 dark:text-amber-400" />
                                                 <p className="text-sm">
-                                                    <strong className="font-semibold">Low Evidence Notice:</strong> Only {results.skillsDetected ?? results.skills_detected ?? 1} recognized {(results.skillsDetected ?? results.skills_detected) === 1 ? 'skill was' : 'skills were'} detected in this job description. Match scores and gap insights may be less reliable.
+                                                    <strong className="font-semibold">Low Evidence Notice:</strong> {lowEvidenceNotice} Match scores and gap insights may be less reliable.
                                                 </p>
                                             </div>
                                             <Button 
