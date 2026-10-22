@@ -20,7 +20,7 @@ async def test_zero_jd_skills_returns_unparseable_jd():
     assert result["overall_score"] is None
     assert result["skills_detected"] == 0
     assert result["low_confidence"] is True
-    assert "No technical skills or core requirements" in result["message"]
+    assert "We couldn't recognize specific requirements in this job description" in result["message"]
     # Verify NO fabricated skills in missing_skills
     assert result["skill_analysis"]["missing_skills"] == []
     assert result["skill_analysis"]["matching_skills"] == []

@@ -21,7 +21,7 @@ export function UnparseableJdCard({ onEditJd, message }) {
                         We couldn't recognize specific requirements in this job description
                     </h2>
                     <p className="text-sm sm:text-base text-zinc-600 dark:text-zinc-400 leading-relaxed">
-                        This version works best with skill-based postings and has limited coverage for some fields, such as healthcare, law and trades, so your job description may be fine. You can paste the requirements section or edit the text below.
+                        This version works best with skill-based postings and has limited coverage for some fields, such as healthcare, law and trades, so your posting may be fine. You can paste the requirements section or edit the text below.
                     </p>
                 </div>
 

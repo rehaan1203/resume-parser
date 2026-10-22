@@ -113,7 +113,7 @@ class DeterministicOrchestrator:
                 },
                 "skills_detected": 0,
                 "low_confidence": True,
-                "message": "No technical skills or core requirements could be identified in the provided Job Description. Please provide a more detailed job posting.",
+                "message": "We couldn't recognize specific requirements in this job description. This version works best with skill-based postings and has limited coverage for some fields, such as healthcare, law and trades, so your posting may be fine.",
                 "friction_points": [],
                 "strengths": [],
                 "skill_gaps": [],
