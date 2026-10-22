@@ -31,7 +31,8 @@ class GenAIClient:
         # MISTRAL CONFIGURATION
         if not settings.mistral_api_key:
             raise ValueError("MISTRAL_API_KEY not set")
-        self.client = MistralAsyncClient(api_key=settings.mistral_api_key)
+        endpoint = "https://codestral.mistral.ai" if settings.mistral_api_key.startswith("mstrl_") else "https://api.mistral.ai"
+        self.client = MistralAsyncClient(api_key=settings.mistral_api_key, endpoint=endpoint)
 
         self.max_retries = settings.ai_max_retries
         self.timeout = settings.ai_timeout_seconds
@@ -69,10 +70,11 @@ class GenAIClient:
             # else:
             #     raise ValueError("No content returned from API")
 
-            # MISTRAL IMPLEMENTATION
-            # If the user asks for gemini, fallback to mistral for now
-            if "gemini" in model:
-                model = "mistral-small-latest"
+            # MISTRAL / CODESTRAL IMPLEMENTATION
+            if settings.mistral_api_key and settings.mistral_api_key.startswith("mstrl_"):
+                model = "codestral-latest"
+            elif "gemini" in model:
+                model = settings.ai_model or "mistral-small-latest"
                 
             response = await self.client.chat(
                 model=model,
