@@ -37,7 +37,7 @@ export const JDInput = ({ jdText, jdUrl, onTextChange, onUrlChange, error }) => 
       </div>
 
       <div className="flex-1 relative">
-        {activeTab === 'text' ? (<textarea value={jdText} onChange={(e) => onTextChange(e.target.value)} onFocus={() => setIsFocused(true)} onBlur={() => setIsFocused(false)} placeholder="Paste the job description here..." className="w-full h-64 p-5 text-sm bg-zinc-50/50 dark:bg-[#09090b]/50 border border-zinc-200 dark:border-zinc-800 rounded-lg resize-none focus:outline-none transition-colors shadow-inner"/>) : (<div className="w-full h-64 flex flex-col justify-center items-center space-y-4 border border-zinc-200 dark:border-zinc-800 rounded-lg p-6 bg-zinc-50/50 dark:bg-[#09090b]/50">
+        {activeTab === 'text' ? (<textarea id="jd-input-textarea" value={jdText} onChange={(e) => onTextChange(e.target.value)} onFocus={() => setIsFocused(true)} onBlur={() => setIsFocused(false)} placeholder="Paste the job description here..." className="w-full h-64 p-5 text-sm bg-zinc-50/50 dark:bg-[#09090b]/50 border border-zinc-200 dark:border-zinc-800 rounded-lg resize-none focus:outline-none transition-colors shadow-inner"/>) : (<div className="w-full h-64 flex flex-col justify-center items-center space-y-4 border border-zinc-200 dark:border-zinc-800 rounded-lg p-6 bg-zinc-50/50 dark:bg-[#09090b]/50">
             <div className="w-full max-w-sm">
               <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Job Posting URL</label>
               <div className="flex flex-col sm:flex-row gap-2">
