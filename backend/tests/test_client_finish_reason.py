@@ -57,7 +57,6 @@ async def test_caller_fallback_on_truncation():
     """Test that Phase3Explainer callers handle LLMTruncationError gracefully via fallbacks."""
     with patch("app.ai.explainer.GenAIClient") as MockGenAIClient:
         mock_client = MagicMock()
-        # Mock structured content generation to raise LLMTruncationError
         mock_client.generate_structured_content = AsyncMock(
             side_effect=LLMTruncationError("Truncated", completion_tokens=4000)
         )
@@ -72,3 +71,123 @@ async def test_caller_fallback_on_truncation():
         )
         assert "Candidate achieved a 85% match" in summary
         assert "Python" in summary
+
+
+@pytest.mark.asyncio
+async def test_experience_extractor_truncation_fallback():
+    """Test that extract_years_experience returns 0 on LLMTruncationError when regex fails."""
+    from app.utils.experience_extractor import extract_years_experience
+    with patch("app.utils.experience_extractor.GenAIClient") as MockClient, \
+         patch("app.utils.experience_extractor.CacheManager.get", return_value=None):
+        mock_client = MagicMock()
+        mock_client.generate_structured_content = AsyncMock(
+            side_effect=LLMTruncationError("Truncated", completion_tokens=4000)
+        )
+        MockClient.return_value = mock_client
+        # Text without numeric regex pattern triggers LLM fallback
+        years = await extract_years_experience("Experienced developer lead on various systems")
+        assert years == 0
+
+
+@pytest.mark.asyncio
+async def test_ats_optimizer_truncation_fallback():
+    """Test that ATSOptimizer returns default suggestions on LLMTruncationError."""
+    from app.ai.ats_optimizer import ATSOptimizer
+    mock_client = MagicMock()
+    mock_client.generate_structured_content = AsyncMock(
+        side_effect=LLMTruncationError("Truncated", completion_tokens=4000)
+    )
+    optimizer = ATSOptimizer(mock_client)
+    result = await optimizer.optimize("resume", "jd", [])
+    assert "keywords_to_add" in result
+    assert "Python" in result["keywords_to_add"]
+
+
+@pytest.mark.asyncio
+async def test_interview_questions_truncation_fallback():
+    """Test that InterviewQuestionGenerator returns default questions on LLMTruncationError."""
+    from app.ai.interview_questions import InterviewQuestionGenerator
+    mock_client = MagicMock()
+    mock_client.generate_structured_content = AsyncMock(
+        side_effect=LLMTruncationError("Truncated", completion_tokens=4000)
+    )
+    generator = InterviewQuestionGenerator(mock_client)
+    questions = await generator.generate_questions("resume", "jd", ["Kubernetes"], ["Python"])
+    assert len(questions) > 0
+    assert "Kubernetes" in questions[0]["question"]
+
+
+@pytest.mark.asyncio
+async def test_career_advisor_truncation_fallback():
+    """Test that CareerAdvisor returns default advice on LLMTruncationError."""
+    from app.ai.career_advisor import CareerAdvisor
+    mock_client = MagicMock()
+    mock_client.generate_structured_content = AsyncMock(
+        side_effect=LLMTruncationError("Truncated", completion_tokens=4000)
+    )
+    advisor = CareerAdvisor(mock_client)
+    advice = await advisor.get_advice("resume", "5 years", "Principal Engineer", ["Go"])
+    assert "short_term_goals" in advice
+    assert any("Go" in goal for goal in advice["short_term_goals"])
+
+
+@pytest.mark.asyncio
+async def test_legacy_llm_truncation_fallback():
+    """Test that LLMService methods in llm.py handle LLMTruncationError without raising."""
+    from app.ai.llm import LLMService
+    mock_client = MagicMock()
+    mock_client.generate_structured_content = AsyncMock(
+        side_effect=LLMTruncationError("Truncated", completion_tokens=4000)
+    )
+    service = LLMService(mock_client)
+    
+    friction = await service.analyze_friction("resume", "jd", [])
+    assert "skill_gaps" in friction
+    
+    roadmap = await service.generate_roadmap(["Python"], ["SQL"])
+    assert roadmap == []
+    
+    analysis = await service.generate_analysis("resume", "jd")
+    assert analysis["overall_score"] == 72
+
+
+@pytest.mark.asyncio
+async def test_transition_route_truncation_fallback():
+    """Test that transition route functions return structured fallbacks on LLMTruncationError."""
+    from app.api.routes.transition import generate_transition_roadmap, generate_transition_tips
+    with patch("app.api.routes.transition.GenAIClient") as MockClient:
+        mock_client = MagicMock()
+        mock_client.generate_structured_content = AsyncMock(
+            side_effect=LLMTruncationError("Truncated", completion_tokens=4000)
+        )
+        MockClient.return_value = mock_client
+        
+        roadmap = await generate_transition_roadmap("software", "legal", "resume...", "jd...")
+        assert roadmap["type"] == "career_change"
+        assert len(roadmap["phases"]) == 1
+        
+        tips = await generate_transition_tips("software", "legal", "resume...", "jd...")
+        assert "resume_strategy" in tips
+        assert len(tips["resume_strategy"]) >= 1
+
+
+@pytest.mark.asyncio
+async def test_orchestrator_resilience_to_llm_truncation():
+    """Test that DeterministicOrchestrator pipeline succeeds even when Phase 3 LLM calls are truncated."""
+    from app.ai.orchestrator import DeterministicOrchestrator
+    with patch("app.ai.explainer.GenAIClient") as MockExplainerClient:
+        mock_client = MagicMock()
+        mock_client.generate_structured_content = AsyncMock(
+            side_effect=LLMTruncationError("Truncated", completion_tokens=4000)
+        )
+        MockExplainerClient.return_value = mock_client
+
+        orchestrator = DeterministicOrchestrator()
+        result = await orchestrator.process({
+            "resume": "Experienced Python, Docker, Kubernetes and AWS cloud engineer with 5 years experience.",
+            "jd_text": "Senior Python, Docker, Kubernetes and AWS cloud engineer with 5+ years experience required."
+        })
+        assert result.get("overall_score") is not None
+        assert "executive_summary" in result
+        assert "Candidate achieved a" in result["executive_summary"]
+
