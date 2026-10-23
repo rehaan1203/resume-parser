@@ -6,7 +6,11 @@ from typing import Dict, Any, Optional, List, Tuple
 from app.utils.logger import logger
 from app.utils.cache_manager import CacheManager
 from app.ai.client import GenAIClient
-from app.prompts.extraction_prompt import build_experience_extraction_prompt
+from app.prompts.extraction_prompt import (
+    build_candidate_experience_prompt,
+    build_jd_experience_prompt,
+    build_experience_extraction_prompt,
+)
 
 @dataclass
 class ExperienceResult:
@@ -35,6 +39,25 @@ def parse_num(val_str: str) -> Optional[int]:
     if val_str.isdigit():
         return int(val_str)
     return NUMBER_WORDS.get(val_str)
+
+def verify_evidence_quote(quote: Optional[str], source_text: str, years: Optional[int]) -> bool:
+    """Verify that quote exists in source text (case and whitespace normalized) and contains stated years."""
+    if not quote or not source_text:
+        return False
+    norm_quote = " ".join(quote.lower().split())
+    norm_source = " ".join(source_text.lower().split())
+    if norm_quote not in norm_source:
+        return False
+
+    if years is not None:
+        num_str = str(years)
+        words_for_year = [w for w, v in NUMBER_WORDS.items() if v == years]
+        has_digit = bool(re.search(r'\b' + re.escape(num_str) + r'\b', norm_quote))
+        has_word = any(re.search(r'\b' + re.escape(w) + r'\b', norm_quote) for w in words_for_year)
+        if not (has_digit or has_word):
+            return False
+
+    return True
 
 def extract_candidate_experience(resume_text: str) -> ExperienceResult:
     """
@@ -100,6 +123,54 @@ def extract_candidate_experience(resume_text: str) -> ExperienceResult:
         logger.error(f"Error extracting candidate experience: {e}")
         return ExperienceResult(status="error", years=None, source="regex", evidence=str(e))
 
+async def extract_candidate_experience_with_llm(
+    resume_text: str,
+    client: Optional[GenAIClient] = None
+) -> ExperienceResult:
+    """Extract candidate experience with high-precision regex and LLM fallback."""
+    regex_res = extract_candidate_experience(resume_text)
+    if regex_res.status in ("found", "explicit_zero"):
+        return regex_res
+
+    from app.config import settings
+    max_chars = getattr(settings, "experience_llm_max_chars", 15000)
+
+    try:
+        ai_client = client or GenAIClient()
+        prompt = build_candidate_experience_prompt(resume_text, max_chars=max_chars)
+        raw_response = await ai_client.generate_structured_content(
+            prompt=prompt,
+            output_schema={
+                "status": "string",
+                "years": 0,
+                "evidence_quote": "string"
+            },
+            temperature=0.0
+        )
+        status = raw_response.get("status")
+        years = raw_response.get("years")
+        quote = raw_response.get("evidence_quote")
+
+        if status == "found":
+            if not isinstance(years, int) or years < 0 or years > 50:
+                return ExperienceResult(status="not_found", years=None, source="llm")
+            if not verify_evidence_quote(quote, resume_text, years):
+                logger.warning(f"Candidate experience quote verification failed: quote={quote!r}, years={years}")
+                return ExperienceResult(status="not_found", years=None, source="llm")
+            return ExperienceResult(status="found", years=years, source="llm", evidence=quote)
+
+        elif status == "explicit_zero":
+            if quote and not verify_evidence_quote(quote, resume_text, 0):
+                return ExperienceResult(status="not_found", years=None, source="llm")
+            return ExperienceResult(status="explicit_zero", years=0, source="llm", evidence=quote)
+
+        else:
+            return ExperienceResult(status="not_found", years=None, source="llm")
+
+    except Exception as e:
+        logger.error(f"Candidate experience LLM extraction failed: {e}")
+        return ExperienceResult(status="error", years=None, source="llm", evidence=str(e))
+
 def extract_required_experience(jd_text: str) -> ExperienceResult:
     """
     Extract minimum required experience from job description using regex.
@@ -148,6 +219,54 @@ def extract_required_experience(jd_text: str) -> ExperienceResult:
     except Exception as e:
         logger.error(f"Error extracting required JD experience: {e}")
         return ExperienceResult(status="error", years=None, source="regex", evidence=str(e))
+
+async def extract_required_experience_with_llm(
+    jd_text: str,
+    client: Optional[GenAIClient] = None
+) -> ExperienceResult:
+    """Extract required experience from JD with LLM fallback and evidence verification."""
+    regex_res = extract_required_experience(jd_text)
+    if regex_res.status in ("found", "explicit_zero"):
+        return regex_res
+
+    from app.config import settings
+    max_chars = getattr(settings, "experience_llm_max_chars", 15000)
+
+    try:
+        ai_client = client or GenAIClient()
+        prompt = build_jd_experience_prompt(jd_text, max_chars=max_chars)
+        raw_response = await ai_client.generate_structured_content(
+            prompt=prompt,
+            output_schema={
+                "status": "string",
+                "years": 0,
+                "evidence_quote": "string"
+            },
+            temperature=0.0
+        )
+        status = raw_response.get("status")
+        years = raw_response.get("years")
+        quote = raw_response.get("evidence_quote")
+
+        if status == "found":
+            if not isinstance(years, int) or years < 0 or years > 50:
+                return ExperienceResult(status="not_specified", years=None, source="llm")
+            if not verify_evidence_quote(quote, jd_text, years):
+                logger.warning(f"JD experience quote verification failed: quote={quote!r}, years={years}")
+                return ExperienceResult(status="not_specified", years=None, source="llm")
+            return ExperienceResult(status="found", years=years, source="llm", evidence=quote)
+
+        elif status == "explicit_zero":
+            if quote and not verify_evidence_quote(quote, jd_text, 0):
+                return ExperienceResult(status="not_specified", years=None, source="llm")
+            return ExperienceResult(status="explicit_zero", years=0, source="llm", evidence=quote)
+
+        else:
+            return ExperienceResult(status="not_specified", years=None, source="llm")
+
+    except Exception as e:
+        logger.error(f"JD experience LLM extraction failed: {e}")
+        return ExperienceResult(status="error", years=None, source="llm", evidence=str(e))
 
 def _extract_jd_clause(text: str, matches: list):
     patterns = [

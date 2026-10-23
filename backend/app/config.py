@@ -37,6 +37,7 @@ class Settings(BaseSettings):
     ai_backoff_factor: float = 2.0
     max_embedding_batch_size: int = 100
     max_token_limit: int = 8000
+    experience_llm_max_chars: int = 15000
     
     # Critic Loop Settings
     critic_enabled: bool = True

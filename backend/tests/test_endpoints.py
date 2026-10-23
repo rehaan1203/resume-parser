@@ -35,7 +35,11 @@ class LLMCallTracker:
         if "message" in output_schema:
             return {"message": "Domain mismatch detected."}
         if "years" in output_schema:
+            if "status" in output_schema:
+                return {"status": "found", "years": 4, "evidence_quote": "4 years experience"}
             return {"years": 4}
+        if "status" in output_schema:
+            return {"status": "not_found", "years": None, "evidence_quote": None}
         return {}
 
 @pytest.fixture

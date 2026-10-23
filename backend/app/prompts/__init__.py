@@ -34,6 +34,8 @@ from app.prompts.seniority_prompt import (
     SENIORITY_ALIGNMENT_PROMPT_VERSION
 )
 from app.prompts.extraction_prompt import (
+    build_candidate_experience_prompt,
+    build_jd_experience_prompt,
     build_experience_extraction_prompt,
     EXPERIENCE_EXTRACTION_PROMPT_VERSION
 )
@@ -79,6 +81,8 @@ __all__ = [
     "build_seniority_alignment_prompt",
     "SENIORITY_ALIGNMENT_PROMPT_VERSION",
     # Extraction
+    "build_candidate_experience_prompt",
+    "build_jd_experience_prompt",
     "build_experience_extraction_prompt",
     "EXPERIENCE_EXTRACTION_PROMPT_VERSION",
     # Career

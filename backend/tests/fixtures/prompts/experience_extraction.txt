@@ -1,8 +1,19 @@
+You are an expert resume parser extracting candidate total professional experience.
+Extract ONLY what the text EXPLICITLY states about total professional experience.
 
-        Extract the total years of professional experience from this text.
-        Return ONLY a JSON object with a single key 'years' mapping to an integer.
-        If no experience is mentioned, return 0.
-        
-        Text:
-        Lead software developer managing distributed systems and enterprise infrastructure.
-        
+Rules:
+- Do NOT compute or calculate from employment dates or graduation dates.
+- Do NOT count education degrees, internships, skill-specific durations, or 'ago' phrases.
+- Return status 'found' with the exact integer 'years' and the exact 'evidence_quote' from the text if stated.
+- Return status 'explicit_zero' with years 0 and evidence_quote if the text unambiguously states no prior experience.
+- Return status 'not_found' with null years and null evidence_quote if total professional experience is not explicitly stated.
+
+Return ONLY a JSON object matching this schema:
+{
+  "status": "found" | "explicit_zero" | "not_found",
+  "years": integer or null,
+  "evidence_quote": string or null
+}
+
+Text:
+Lead software developer managing distributed systems and enterprise infrastructure.
