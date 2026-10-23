@@ -1,17 +1,186 @@
 """Extracts and calculates seniority deterministically."""
 import re
 import hashlib
-from typing import Dict, Any, Optional
+from dataclasses import dataclass
+from typing import Dict, Any, Optional, List, Tuple
 from app.utils.logger import logger
 from app.utils.cache_manager import CacheManager
 from app.ai.client import GenAIClient
 from app.prompts.extraction_prompt import build_experience_extraction_prompt
 
+@dataclass
+class ExperienceResult:
+    """Explicit result of experience extraction."""
+    status: str  # resume: 'found' | 'explicit_zero' | 'not_found' | 'error'
+                 # jd: 'found' | 'explicit_zero' | 'not_specified' | 'error'
+    years: Optional[int]
+    source: str  # 'regex' | 'llm'
+    evidence: Optional[str] = None
+
+NUMBER_WORDS = {
+    "zero": 0, "one": 1, "two": 2, "three": 3, "four": 4, "five": 5,
+    "six": 6, "seven": 7, "eight": 8, "nine": 9, "ten": 10,
+    "eleven": 11, "twelve": 12, "thirteen": 13, "fourteen": 14, "fifteen": 15,
+    "sixteen": 16, "seventeen": 17, "eighteen": 18, "nineteen": 19, "twenty": 20,
+    "decade": 10,
+}
+
+NUM_PATTERN = r'(\d+|zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty)'
+
+def parse_num(val_str: str) -> Optional[int]:
+    """Parse integer or number-word into int."""
+    if not val_str:
+        return None
+    val_str = val_str.lower().strip()
+    if val_str.isdigit():
+        return int(val_str)
+    return NUMBER_WORDS.get(val_str)
+
+def extract_candidate_experience(resume_text: str) -> ExperienceResult:
+    """
+    Extract candidate total experience from resume using high-precision rules.
+    Statuses: found, explicit_zero, not_found, error.
+    """
+    if not resume_text:
+        return ExperienceResult(status="not_found", years=None, source="regex")
+
+    try:
+        # 1. Unambiguous explicit zero checks
+        explicit_zero_patterns = [
+            r'\b0\+?\s*years?(?:\s*of)?\s*(?:work\s*|professional\s*)?experience\b',
+            r'\bzero\s*years?(?:\s*of)?\s*(?:work\s*|professional\s*)?experience\b',
+            r'\bno\s*prior\s*(?:work\s*|professional\s*)?experience\b',
+            r'\bno\s*experience\b',
+        ]
+        for p in explicit_zero_patterns:
+            m = re.search(p, resume_text, re.IGNORECASE)
+            if m:
+                return ExperienceResult(status="explicit_zero", years=0, source="regex", evidence=m.group(0))
+
+        # 2. High-precision patterns that clearly state total professional experience
+        # Bare "N years" or "N yrs" (e.g. "Python for 3 years", "Led a team for 2 years") is NOT accepted.
+        patterns = [
+            rf'\b{NUM_PATTERN}\+?\s*years?\'?\s*(?:of\s*)?(?:professional|relevant|work|clinical|practical|industry)?\s*experience\b',
+            rf'\bexperience\s*of\s*{NUM_PATTERN}\+?\s*years?\b',
+            rf'\b{NUM_PATTERN}\+?\s*years?\s*in\s*(?:the\s*)?(?:industry|field|profession|nursing|software|engineering|practice|intensive\s*care)\b',
+            r'\b(?:over\s*a|a|one)\s*decade\s*(?:of\s*)?(?:professional|relevant|work|clinical)?\s*experience\b',
+            r'\b(?:over\s*a|a|one)\s*decade\s*in\s*(?:the\s*)?(?:industry|field|profession|nursing|practice)\b',
+            r'\btwo\s*decades\s*(?:of\s*)?(?:professional|relevant|work|clinical)?\s*experience\b',
+        ]
+
+        matches = []
+        for p in patterns:
+            for m in re.finditer(p, resume_text, re.IGNORECASE):
+                after_text = resume_text[m.end():m.end() + 20].lower()
+                if re.match(r'^\s*(?:ago\b|old\b|-old\b|-year-old\b)', after_text):
+                    continue
+                matched_str = m.group(0).lower()
+                val = None
+                if "decade" in matched_str:
+                    val = 20 if "two" in matched_str else 10
+                elif m.groups() and m.group(1):
+                    val = parse_num(m.group(1))
+
+                if val is not None and 0 <= val <= 50 and not (1950 <= val <= 2100):
+                    matches.append((val, m.group(0)))
+
+        if matches:
+            years_list = [item[0] for item in matches]
+            max_years = max(years_list)
+            min_years = min(years_list)
+            if max_years - min_years > 2:
+                logger.info(f"Candidate experience matches differ by >2 years: {years_list}, taking max {max_years}")
+            best_match = next(item for item in matches if item[0] == max_years)
+            return ExperienceResult(status="found", years=max_years, source="regex", evidence=best_match[1])
+
+        # Hints like "recent graduate", "entry-level", "fresher" stay not_found (candidate for LLM)
+        return ExperienceResult(status="not_found", years=None, source="regex")
+
+    except Exception as e:
+        logger.error(f"Error extracting candidate experience: {e}")
+        return ExperienceResult(status="error", years=None, source="regex", evidence=str(e))
+
+def extract_required_experience(jd_text: str) -> ExperienceResult:
+    """
+    Extract minimum required experience from job description using regex.
+    Statuses: found (minimum required), explicit_zero, not_specified, error.
+    """
+    if not jd_text:
+        return ExperienceResult(status="not_specified", years=None, source="regex")
+
+    try:
+        jd_lower = jd_text.lower()
+        # 1. Check explicit zero indicators
+        if re.search(r'\b(?:entry[- ]level|no\s*experience\s*required|freshers?(?:\s*welcome)?)\b', jd_lower):
+            return ExperienceResult(status="explicit_zero", years=0, source="regex", evidence="entry-level / no experience required")
+
+        range_zero = re.search(r'\b0\s*(?:-|to)\s*(\d+)\s*years?\b', jd_lower)
+        if range_zero:
+            return ExperienceResult(status="explicit_zero", years=0, source="regex", evidence=range_zero.group(0))
+
+        # 2. Extract required clauses, skipping preferred/plus/nice to have/ideal/bonus
+        clauses = re.split(r'[.;\n]', jd_text)
+        required_matches = []
+
+        for clause in clauses:
+            clause_lower = clause.lower()
+            if any(kw in clause_lower for kw in ["preferred", "plus", "nice to have", "ideal", "bonus"]):
+                # Split compound clauses by comma or 'and' to isolate required portions
+                subparts = re.split(r'[,;]|\band\b', clause)
+                for sub in subparts:
+                    sub_lower = sub.lower()
+                    if any(kw in sub_lower for kw in ["preferred", "plus", "nice to have", "ideal", "bonus"]):
+                        continue
+                    _extract_jd_clause(sub, required_matches)
+            else:
+                _extract_jd_clause(clause, required_matches)
+
+        if required_matches:
+            years_list = [item[0] for item in required_matches]
+            min_years = min(years_list)
+            if len(set(years_list)) > 1:
+                logger.info(f"Conflicting required JD experience numbers {years_list}, taking smallest {min_years}")
+            best_match = next(item for item in required_matches if item[0] == min_years)
+            return ExperienceResult(status="found", years=min_years, source="regex", evidence=best_match[1])
+
+        return ExperienceResult(status="not_specified", years=None, source="regex")
+
+    except Exception as e:
+        logger.error(f"Error extracting required JD experience: {e}")
+        return ExperienceResult(status="error", years=None, source="regex", evidence=str(e))
+
+def _extract_jd_clause(text: str, matches: list):
+    patterns = [
+        rf'\bminimum\s*(?:of)?\s*{NUM_PATTERN}\+?\s*years?\b',
+        rf'\bat\s*least\s*{NUM_PATTERN}\+?\s*years?\b',
+        rf'\b{NUM_PATTERN}\s*(?:-|to)\s*{NUM_PATTERN}\s*years?\b',
+        rf'\b{NUM_PATTERN}\+?\s*years?\'?\s*(?:of\s*)?experience\b',
+        rf'\b{NUM_PATTERN}\+?\s*yrs?\s*(?:exp)?\b',
+        rf'\b{NUM_PATTERN}\+\s*years?\b',
+    ]
+    for p in patterns:
+        for m in re.finditer(p, text, re.IGNORECASE):
+            after_text = text[m.end():m.end() + 20].lower()
+            if re.match(r'^\s*(?:ago\b|old\b|-old\b|-year-old\b)', after_text):
+                continue
+            groups = m.groups()
+            val = None
+            if len(groups) >= 2 and groups[0] and groups[1] and ('-' in m.group(0) or 'to' in m.group(0)):
+                val = parse_num(groups[0])
+            elif groups and groups[0]:
+                val = parse_num(groups[0])
+
+            if val is not None and 0 <= val <= 50 and not (1950 <= val <= 2100):
+                matches.append((val, m.group(0)))
+
 async def extract_years_experience(text: str) -> int:
-    """Extract years of experience from text using regex, fallback to LLM if needed."""
+    """
+    Legacy wrapper extracting years of experience.
+    Preserves existing signature and behavior for orchestrator until Stage 2 migration.
+    """
     if not text:
         return 0
-        
+
     patterns = [
         r'(\d+)\+?\s*years?\s*of\s*experience',
         r'(\d+)\s*\+\s*years?\s*experience',
@@ -19,9 +188,7 @@ async def extract_years_experience(text: str) -> int:
         r'minimum\s*of\s*(\d+)\s*years',
         r'(\d+)(?:\s*to\s*\d+)?\s*years',
     ]
-    
-    # We want to find the max years mentioned if multiple exist in resume,
-    # or just the first matched requirement in JD. We'll collect all numbers.
+
     years_found = []
     for pattern in patterns:
         for match in re.finditer(pattern, text, re.IGNORECASE):
@@ -35,26 +202,21 @@ async def extract_years_experience(text: str) -> int:
                 years_found.append(val)
             except ValueError:
                 pass
-                
+
     if years_found:
         return max(years_found)
-    
+
     # --- LLM Fallback (Regex Failed) ---
     logger.warning("Regex extraction for years of experience failed. Falling back to LLM.")
-    
-    # Create cache key based on text hash
     text_hash = hashlib.md5(text.encode('utf-8')).hexdigest()
     cache_key = f"exp_extract:{text_hash}"
-    
     cache_manager = CacheManager()
-    
-    # 1. Check cache first
+
     cached_years = await cache_manager.get(cache_key)
     if cached_years is not None:
         logger.info(f"Retrieved extracted years from cache: {cached_years}")
         return int(cached_years)
-        
-    # 2. Call LLM
+
     try:
         client = GenAIClient()
         prompt = build_experience_extraction_prompt(text)
@@ -63,12 +225,9 @@ async def extract_years_experience(text: str) -> int:
             output_schema={"years": 0}
         )
         years = response.get("years", 0)
-        
-        # 3. Cache the result
-        await cache_manager.set(cache_key, years, ttl=86400) # Cache for 1 day
+        await cache_manager.set(cache_key, years, ttl=86400)
         logger.info(f"LLM successfully extracted {years} years of experience.")
         return years
     except Exception as e:
         logger.error(f"LLM fallback for experience extraction failed: {e}")
         return 0
-
