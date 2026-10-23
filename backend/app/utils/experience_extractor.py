@@ -15,7 +15,6 @@ async def extract_years_experience(text: str) -> int:
     patterns = [
         r'(\d+)\+?\s*years?\s*of\s*experience',
         r'(\d+)\s*\+\s*years?\s*experience',
-        r'experience[:\-]?\s*(\d+)',
         r'(\d+)\+?\s*yrs?\s*exp',
         r'minimum\s*of\s*(\d+)\s*years',
         r'(\d+)(?:\s*to\s*\d+)?\s*years',
@@ -26,8 +25,14 @@ async def extract_years_experience(text: str) -> int:
     years_found = []
     for pattern in patterns:
         for match in re.finditer(pattern, text, re.IGNORECASE):
+            after_text = text[match.end():match.end() + 20].lower()
+            if re.match(r'^\s*(?:ago\b|old\b|-old\b|-year-old\b)', after_text):
+                continue
             try:
-                years_found.append(int(match.group(1)))
+                val = int(match.group(1))
+                if val > 50 or (1950 <= val <= 2100):
+                    continue
+                years_found.append(val)
             except ValueError:
                 pass
                 
