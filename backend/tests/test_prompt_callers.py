@@ -13,6 +13,7 @@ from app.api.routes.transition import generate_transition_roadmap, generate_tran
 from app.utils.experience_extractor import (
     extract_years_experience,
     extract_candidate_experience_with_llm,
+    extract_required_experience_with_llm,
 )
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures" / "prompts"
@@ -223,3 +224,24 @@ async def test_caller_experience_extraction():
         await extract_candidate_experience_with_llm(sample_text)
 
     assert captured_prompt == read_fixture("experience_extraction.txt")
+
+
+@pytest.mark.asyncio
+async def test_caller_jd_experience_extraction():
+    captured_prompt = None
+
+    async def mock_generate(prompt, output_schema, **kwargs):
+        nonlocal captured_prompt
+        captured_prompt = prompt
+        return {"status": "not_specified", "years": None, "evidence_quote": None}
+
+    sample_text = "Lead software developer managing distributed systems and enterprise infrastructure."
+    with patch("app.utils.experience_extractor.GenAIClient") as mock_client_cls:
+        mock_instance = AsyncMock()
+        mock_instance.generate_structured_content = mock_generate
+        mock_client_cls.return_value = mock_instance
+
+        await extract_required_experience_with_llm(sample_text)
+
+    assert captured_prompt == read_fixture("jd_experience_extraction.txt")
+

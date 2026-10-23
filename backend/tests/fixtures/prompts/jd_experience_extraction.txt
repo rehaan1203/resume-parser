@@ -1,0 +1,19 @@
+You are an expert job description parser extracting minimum required experience.
+Extract ONLY the MINIMUM required professional experience for the role.
+
+Rules:
+- Ignore preferred, bonus, nice-to-have, or ideal experience figures.
+- For ranges (e.g. 3-5 years), extract the minimum (3).
+- Return status 'found' with minimum required integer 'years' and the exact 'evidence_quote' from the text.
+- Return status 'explicit_zero' with years 0 and evidence_quote if entry-level or no experience required.
+- Return status 'not_found' with null years and null evidence_quote if no experience requirement is stated.
+
+Return ONLY a JSON object matching this schema:
+{
+  "status": "found" | "explicit_zero" | "not_found",
+  "years": integer or null,
+  "evidence_quote": string or null
+}
+
+Text:
+Lead software developer managing distributed systems and enterprise infrastructure.
