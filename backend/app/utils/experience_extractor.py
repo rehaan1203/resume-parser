@@ -41,7 +41,10 @@ def parse_num(val_str: str) -> Optional[int]:
     return NUMBER_WORDS.get(val_str)
 
 def verify_evidence_quote(quote: Optional[str], source_text: str, years: Optional[int]) -> bool:
-    """Verify that quote exists in source text (case and whitespace normalized) and contains stated years."""
+    """
+    Verify that quote exists in source text (case and whitespace normalized) and contains stated years.
+    Applies ago/old, skill-specific duration, calendar-year, over-50, and whole-career explicit-zero filters.
+    """
     if not quote or not source_text:
         return False
     norm_quote = " ".join(quote.lower().split())
@@ -49,6 +52,41 @@ def verify_evidence_quote(quote: Optional[str], source_text: str, years: Optiona
     if norm_quote not in norm_source:
         return False
 
+    if years is not None:
+        if years < 0 or years > 50 or (1950 <= years <= 2100):
+            return False
+
+    if years == 0:
+        career_zero_patterns = [
+            r'\b(?:0|zero)\+?\s*years?(?:\s*of)?\s*(?:work\s*|professional\s*|career\s*)?experience\b',
+            r'\bno\s*prior\s*(?:work\s*|professional\s*|career\s*)?experience\b',
+            r'\bno\s*(?:professional|work)\s*experience\b',
+            r'\bno\s*experience\s*in\s*(?:the\s*)?workforce\b',
+            r'\b(?:entry[- ]level|no\s*experience\s*required|freshers?(?:\s*welcome)?)\b',
+            r'\b0\s*(?:-|to)\s*\d+\s*years?\b',
+        ]
+        if not any(re.search(p, norm_quote) for p in career_zero_patterns):
+            return False
+        return True
+
+    # 1. Elapsed time / age filters
+    if re.search(r'\b(?:\d+|' + NUM_PATTERN.replace('(', '(?:') + r')\s*years?\s*(?:ago\b|old\b|-old\b|-year-old\b)', norm_quote):
+        return False
+    if "graduated" in norm_quote and "ago" in norm_quote:
+        return False
+
+    # 2. Skill-specific duration: "<Skill> for N years"
+    if re.search(r'\b[a-z0-9#+.-]+\s+for\s+(?:\d+|' + NUM_PATTERN.replace('(', '(?:') + r')\s*years?\b', norm_quote):
+        return False
+
+    # 3. Tool-specific duration: "N years in/with/of <Tool>"
+    from app.utils.skill_extractor import COMMON_SKILLS
+    skills_set = set(s.lower() for s in COMMON_SKILLS)
+    m_skill = re.search(r'\b(?:\d+|' + NUM_PATTERN.replace('(', '(?:') + r')\+?\s*years?\s+(?:in|with|of)\s+([a-z0-9#+.-]+)\b', norm_quote)
+    if m_skill and m_skill.group(1).lower() in skills_set:
+        return False
+
+    # 4. Check that stated year (digit or number word, including 'decade') exists in quote
     if years is not None:
         num_str = str(years)
         words_for_year = [w for w, v in NUMBER_WORDS.items() if v == years]
