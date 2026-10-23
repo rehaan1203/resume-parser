@@ -97,45 +97,66 @@ def verify_evidence_quote(quote: Optional[str], source_text: str, years: Optiona
 
     return True
 
+ROLE_STOPLIST = {
+    "student", "undergraduate", "grad", "graduate",
+    "intern", "internship", "trainee", "apprentice",
+    "fellow", "phd", "candidate"
+}
+
 def extract_candidate_experience(resume_text: str) -> ExperienceResult:
     """
     Extract candidate total experience from resume using high-precision rules.
     Statuses: found, explicit_zero, not_found, error.
     Positive patterns run first and always win over zero wording.
+    When multiple experience statements appear, the maximum is taken as a lower bound.
+    Generic catch-alls like 'N years in/of <noun>' are excluded to avoid misinterpreting
+    skill or education tenure (e.g. '5 years in FastAPI', '4 years in college'); such
+    cases fall back to LLM extraction.
     """
     if not resume_text:
         return ExperienceResult(status="not_found", years=None, source="regex")
 
     try:
-        from app.utils.skill_extractor import COMMON_SKILLS
-        skills_set = set(s.lower() for s in COMMON_SKILLS)
-
-        # 1. High-precision positive patterns that state total professional or domain experience
-        # Bare "N years" or "N yrs" (e.g. "Python for 3 years", "Led a team for 2 years") is NOT accepted.
+        # 1. High-precision positive patterns stating total professional, career, or practice experience
         patterns = [
-            rf'\b{NUM_PATTERN}\+?\s*years?\'?\s*(?:of\s*)?(?:total\s*|overall\s*|professional\s*|relevant\s*|work\s*|career\s*|industry\s*)?experience\b',
-            rf'\bexperience\s*of\s*{NUM_PATTERN}\+?\s*years?\b',
-            rf'\b{NUM_PATTERN}\+?\s*years?\'?\s*(?:(?:of\s*)?(?:professional\s*|work\s*)?experience\s+)?as\s+(?:a|an)\s+[a-z]+(?:\s+[a-z]+)?\b',
-            rf'\b{NUM_PATTERN}\+?\s*years?\s*in\s+(?:the\s+)?(?:industry|workforce|field|profession|domain)\b',
-            rf'\b{NUM_PATTERN}\+?\s*years?\s*(?:in|of)\s+([a-z]+ing|[a-z]+)\b',
-            r'\b(?:over\s*a|a|one)\s*decade\s*(?:of\s*)?(?:professional|relevant|work|career)?\s*experience\b',
-            r'\b(?:over\s*a|a|one)\s*decade\s*in\s+(?:the\s+)?(?:industry|workforce|field|profession)\b',
-            r'\btwo\s*decades\s*(?:of\s*)?(?:professional|relevant|work|career)?\s*experience\b',
+            # "N(+) years(') (of) [total|overall|professional|relevant|work|career|clinical] experience"
+            rf'\b{NUM_PATTERN}\+?\s*years?\'?\s*(?:of\s*)?(?:total\s*|overall\s*|professional\s*|relevant\s*|work\s*|career\s*|clinical\s*)?experience\b',
+            # "experience of N years"
+            rf'\bexperience\s*(?:of\s*)?{NUM_PATTERN}\+?\s*years?\b',
+            # "N years in the industry/field/profession/workforce/practice"
+            rf'\b{NUM_PATTERN}\+?\s*years?\s*in\s+(?:the\s+)?(?:industry|field|profession|workforce|practice)\b',
+            # "N years of practice"
+            rf'\b{NUM_PATTERN}\+?\s*years?\s*of\s*practice\b',
+            # "N years as a/an <role>" (subject to educational role stoplist)
+            rf'\b{NUM_PATTERN}\+?\s*years?\'?\s*(?:(?:of\s*)?(?:total\s*|overall\s*|professional\s*|relevant\s*|work\s*|career\s*)?experience\s+)?as\s+(?:a|an)\s+([a-z]+(?:\s+[a-z]+)?)\b',
+            # Decades with experience or industry
+            r'\b(?:over\s*a|a|one)\s*decade\s*(?:of\s*)?(?:total\s*|overall\s*|professional\s*|relevant\s*|work\s*|career\s*|clinical)?\s*experience\b',
+            r'\btwo\s*decades\s*(?:of\s*)?(?:total\s*|overall\s*|professional\s*|relevant\s*|work\s*|career\s*|clinical)?\s*experience\b',
+            r'\b(?:over\s*a|a|one)\s*decade\s*in\s+(?:the\s+)?(?:industry|workforce|field|profession|practice)\b',
+            r'\btwo\s*decades\s*in\s+(?:the\s+)?(?:industry|workforce|field|profession|practice)\b',
         ]
 
         matches = []
         for p in patterns:
             for m in re.finditer(p, resume_text, re.IGNORECASE):
-                after_text = resume_text[m.end():m.end() + 20].lower()
-                if re.match(r'^\s*(?:ago\b|old\b|-old\b|-year-old\b)', after_text):
+                # Elapsed time / age rejection
+                after_text = resume_text[m.end():m.end() + 25].lower()
+                if re.match(r'^\s*(?:ago\b|old\b|-old\b|-year-old\b|of\s+age\b)', after_text):
+                    continue
+                # Education tenure rejection
+                if re.match(r'^\s*(?:in|of)\s+(?:college|university|school|study|studies|education|degree)\b', after_text):
+                    continue
+
+                before_text = resume_text[max(0, m.start() - 25):m.start()].lower()
+                if "graduated" in before_text and "ago" in after_text:
                     continue
 
                 groups = m.groups()
-                # Check if this was a domain/gerund pattern with a specific tool/skill
+                # Check role stoplist for "N years as a/an <role>"
                 if len(groups) >= 2 and groups[1]:
-                    target_noun = groups[1].lower().strip()
-                    if target_noun in skills_set:
-                        # Specific technical tool/skill duration (e.g. "5 years in Python") is skill tenure, not total experience
+                    role_str = groups[1].lower().strip()
+                    first_word = role_str.split()[0]
+                    if first_word in ROLE_STOPLIST or role_str in ROLE_STOPLIST:
                         continue
 
                 matched_str = m.group(0).lower()
@@ -153,13 +174,16 @@ def extract_candidate_experience(resume_text: str) -> ExperienceResult:
             max_years = max(years_list)
             min_years = min(years_list)
             if max_years - min_years > 2:
-                logger.info(f"Candidate experience matches differ by >2 years: {years_list}, taking max {max_years}")
+                logger.info(
+                    f"Candidate experience matches differ by >2 years: {years_list}, "
+                    f"taking max {max_years} as a lower bound for total experience"
+                )
             best_match = next(item for item in matches if item[0] == max_years)
             if max_years == 0:
                 return ExperienceResult(status="explicit_zero", years=0, source="regex", evidence=best_match[1])
             return ExperienceResult(status="found", years=max_years, source="regex", evidence=best_match[1])
 
-        # 2. Whole-career explicit zero checks (positive matches have already been checked and won)
+        # 2. Whole-career explicit zero checks (positive matches have already won if present)
         explicit_zero_patterns = [
             r'\b(?:0|zero)\+?\s*years?(?:\s*of)?\s*(?:work\s*|professional\s*|career\s*)?experience\b',
             r'\bno\s*prior\s*(?:work\s*|professional\s*|career\s*)?experience\b',
