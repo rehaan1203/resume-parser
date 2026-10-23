@@ -1,16 +1,7 @@
 """Text cleaning and normalization utilities."""
 import re
 from typing import Dict, List
-import nltk
-from nltk.corpus import stopwords
-from nltk.tokenize import sent_tokenize
 from app.utils.logger import logger
-
-try:
-    STOPWORDS = set(stopwords.words('english'))
-except LookupError:
-    # Fallback to empty if not downloaded yet
-    STOPWORDS = set()
 
 def clean_text(text: str) -> str:
     """
@@ -78,22 +69,31 @@ def extract_sections(text: str) -> Dict[str, str]:
     
     return sections
 
+def _get_stopwords():
+    try:
+        from nltk.corpus import stopwords
+        return set(stopwords.words('english'))
+    except Exception:
+        return set()
+
 def remove_stopwords(text: str) -> str:
     """Remove English stopwords from text."""
+    stopwords_set = _get_stopwords()
     words = text.split()
-    filtered_words = [w for w in words if w.lower() not in STOPWORDS]
+    filtered_words = [w for w in words if w.lower() not in stopwords_set]
     return ' '.join(filtered_words)
 
 def extract_key_phrases(text: str, num_phrases: int = 10) -> List[str]:
     """Extract key phrases from text (simplified TF-IDF approach)."""
     from collections import Counter
+    stopwords_set = _get_stopwords()
     
     # Clean and tokenize
     text = clean_text(text.lower())
     words = text.split()
     
     # Remove stopwords
-    words = [w for w in words if w not in STOPWORDS]
+    words = [w for w in words if w not in stopwords_set]
     
     # Count frequencies
     word_freq = Counter(words)

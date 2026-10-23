@@ -11,7 +11,6 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from contextlib import asynccontextmanager
-import nltk
 
 from app.config import settings
 from app.api.routes import analysis, health, cache, upload, streaming, advanced, feedback, learning, transition
@@ -33,8 +32,9 @@ async def lifespan(app: FastAPI):
     logger.info(f"AI Service: {'Enabled' if settings.use_ai_service else 'Disabled'}")
     logger.info(f"Cache: {'Enabled' if settings.cache_enabled else 'Disabled'}")
     
-    # Download NLTK data
+    # Download NLTK data lazily
     try:
+        import nltk
         nltk.download('punkt', quiet=True)
         nltk.download('stopwords', quiet=True)
         logger.info("NLTK data downloaded successfully")
