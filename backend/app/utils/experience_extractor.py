@@ -40,10 +40,22 @@ def parse_num(val_str: str) -> Optional[int]:
         return int(val_str)
     return NUMBER_WORDS.get(val_str)
 
-def verify_evidence_quote(quote: Optional[str], source_text: str, years: Optional[int]) -> bool:
+ROLE_STOPLIST = {
+    "student", "undergraduate", "grad", "graduate",
+    "intern", "internship", "trainee", "apprentice",
+    "fellow", "phd", "candidate"
+}
+
+def verify_evidence_quote(
+    quote: Optional[str],
+    source_text: str,
+    years: Optional[int],
+    mode: str = "candidate"
+) -> bool:
     """
     Verify that quote exists in source text (case and whitespace normalized) and contains stated years.
-    Applies ago/old, skill-specific duration, calendar-year, over-50, and whole-career explicit-zero filters.
+    Applies mode-aware zero verification, ago/old filters, education tenure rejection,
+    and generic skill/tool tenure rejection across all professions.
     """
     if not quote or not source_text:
         return False
@@ -56,52 +68,65 @@ def verify_evidence_quote(quote: Optional[str], source_text: str, years: Optiona
         if years < 0 or years > 50 or (1950 <= years <= 2100):
             return False
 
+    # 1. Zero handling (mode-aware)
     if years == 0:
-        career_zero_patterns = [
+        candidate_zero_patterns = [
             r'\b(?:0|zero)\+?\s*years?(?:\s*of)?\s*(?:work\s*|professional\s*|career\s*)?experience\b',
             r'\bno\s*prior\s*(?:work\s*|professional\s*|career\s*)?experience\b',
             r'\bno\s*(?:professional|work)\s*experience\b',
             r'\bno\s*experience\s*in\s*(?:the\s*)?workforce\b',
-            r'\b(?:entry[- ]level|no\s*experience\s*required|freshers?(?:\s*welcome)?)\b',
-            r'\b0\s*(?:-|to)\s*\d+\s*years?\b',
         ]
-        if not any(re.search(p, norm_quote) for p in career_zero_patterns):
-            return False
-        return True
+        if mode == "candidate":
+            return any(re.search(p, norm_quote) for p in candidate_zero_patterns)
+        else:  # JD mode
+            jd_zero_patterns = candidate_zero_patterns + [
+                r'\b(?:entry[- ]level|no\s*experience\s*required|freshers?(?:\s*welcome)?)\b',
+                r'\b0\s*(?:-|to)\s*\d+\s*years?\b',
+            ]
+            return any(re.search(p, norm_quote) for p in jd_zero_patterns)
 
-    # 1. Elapsed time / age filters
-    if re.search(r'\b(?:\d+|' + NUM_PATTERN.replace('(', '(?:') + r')\s*years?\s*(?:ago\b|old\b|-old\b|-year-old\b)', norm_quote):
+    # 2. Elapsed time / age filters
+    if re.search(r'\b(?:\d+|' + NUM_PATTERN.replace('(', '(?:') + r')\s*years?\s*(?:ago\b|old\b|-old\b|-year-old\b|of\s+age\b)', norm_quote):
         return False
     if "graduated" in norm_quote and "ago" in norm_quote:
         return False
 
-    # 2. Skill-specific duration: "<Skill> for N years"
+    # 3. Education tenure filters
+    if re.search(r'\b(?:\d+|' + NUM_PATTERN.replace('(', '(?:') + r')\+?\s*years?\s*(?:in|of)\s+(?:college|university|school|study|studies|education|degree)\b', norm_quote):
+        return False
+
+    # 4. Tool/skill specific duration without experience anchor: "<Skill> for N years"
     if re.search(r'\b[a-z0-9#+.-]+\s+for\s+(?:\d+|' + NUM_PATTERN.replace('(', '(?:') + r')\s*years?\b', norm_quote):
         return False
 
-    # 3. Tool-specific duration: "N years in/with/of <Tool>"
-    from app.utils.skill_extractor import COMMON_SKILLS
-    skills_set = set(s.lower() for s in COMMON_SKILLS)
-    m_skill = re.search(r'\b(?:\d+|' + NUM_PATTERN.replace('(', '(?:') + r')\+?\s*years?\s+(?:in|with|of)\s+([a-z0-9#+.-]+)\b', norm_quote)
-    if m_skill and m_skill.group(1).lower() in skills_set:
+    # 5. Generic experience anchor requirement:
+    # Genuine total/overall quotes anchor on experience words, practice, or role
+    has_experience_anchor = bool(re.search(
+        r'\b(?:experience|exp|practice|career|industry|field|profession|workforce|work|working|operations)\b',
+        norm_quote
+    ))
+    m_role = re.search(r'\bas\s+(?:a|an)\s+([a-z]+(?:\s+[a-z]+)?)\b', norm_quote)
+    has_valid_role = False
+    if m_role:
+        role_word = m_role.group(1).split()[0]
+        if role_word not in ROLE_STOPLIST and m_role.group(1) not in ROLE_STOPLIST:
+            has_valid_role = True
+
+    if not (has_experience_anchor or has_valid_role):
         return False
 
-    # 4. Check that stated year (digit or number word, including 'decade') exists in quote
+    # 6. Check that stated year (digit, number word, or 'decade'/'decades') exists in quote
     if years is not None:
         num_str = str(years)
         words_for_year = [w for w, v in NUMBER_WORDS.items() if v == years]
         has_digit = bool(re.search(r'\b' + re.escape(num_str) + r'\b', norm_quote))
         has_word = any(re.search(r'\b' + re.escape(w) + r'\b', norm_quote) for w in words_for_year)
+        if years == 20 and re.search(r'\b(?:two|2)\s*decades\b', norm_quote):
+            has_word = True
         if not (has_digit or has_word):
             return False
 
     return True
-
-ROLE_STOPLIST = {
-    "student", "undergraduate", "grad", "graduate",
-    "intern", "internship", "trainee", "apprentice",
-    "fellow", "phd", "candidate"
-}
 
 def extract_candidate_experience(resume_text: str) -> ExperienceResult:
     """
@@ -233,13 +258,13 @@ async def extract_candidate_experience_with_llm(
         if status == "found":
             if not isinstance(years, int) or years < 0 or years > 50:
                 return ExperienceResult(status="not_found", years=None, source="llm")
-            if not verify_evidence_quote(quote, resume_text, years):
+            if not verify_evidence_quote(quote, resume_text, years, mode="candidate"):
                 logger.warning(f"Candidate experience quote verification failed: quote={quote!r}, years={years}")
                 return ExperienceResult(status="not_found", years=None, source="llm")
             return ExperienceResult(status="found", years=years, source="llm", evidence=quote)
 
         elif status == "explicit_zero":
-            if quote and not verify_evidence_quote(quote, resume_text, 0):
+            if quote and not verify_evidence_quote(quote, resume_text, 0, mode="candidate"):
                 return ExperienceResult(status="not_found", years=None, source="llm")
             return ExperienceResult(status="explicit_zero", years=0, source="llm", evidence=quote)
 
@@ -330,13 +355,13 @@ async def extract_required_experience_with_llm(
         if status == "found":
             if not isinstance(years, int) or years < 0 or years > 50:
                 return ExperienceResult(status="not_specified", years=None, source="llm")
-            if not verify_evidence_quote(quote, jd_text, years):
+            if not verify_evidence_quote(quote, jd_text, years, mode="jd"):
                 logger.warning(f"JD experience quote verification failed: quote={quote!r}, years={years}")
                 return ExperienceResult(status="not_specified", years=None, source="llm")
             return ExperienceResult(status="found", years=years, source="llm", evidence=quote)
 
         elif status == "explicit_zero":
-            if quote and not verify_evidence_quote(quote, jd_text, 0):
+            if quote and not verify_evidence_quote(quote, jd_text, 0, mode="jd"):
                 return ExperienceResult(status="not_specified", years=None, source="llm")
             return ExperienceResult(status="explicit_zero", years=0, source="llm", evidence=quote)
 
