@@ -83,25 +83,43 @@ async def generate_transition_roadmap(resume_domain: str, jd_domain: str, resume
         jd=jd
     )
     
-    response = await client.generate_structured_content(
-        prompt=prompt,
-        output_schema={
-            "type": "string",
-            "title": "string",
-            "estimated_timeline": "string",
+    try:
+        response = await client.generate_structured_content(
+            prompt=prompt,
+            output_schema={
+                "type": "string",
+                "title": "string",
+                "estimated_timeline": "string",
+                "phases": [
+                    {
+                        "phase": 0,
+                        "duration": "string",
+                        "focus": "string",
+                        "activities": ["string"]
+                    }
+                ]
+            },
+            temperature=0.3
+        )
+        return response
+    except Exception as e:
+        logger.error(f"Failed to generate transition roadmap: {e}")
+        return {
+            "type": "career_change",
+            "title": f"Transition from {resume_domain.replace('_', ' ').title()} to {jd_domain.replace('_', ' ').title()}",
+            "estimated_timeline": "12-18 months",
             "phases": [
                 {
-                    "phase": 0,
-                    "duration": "string",
-                    "focus": "string",
-                    "activities": ["string"]
+                    "phase": 1,
+                    "duration": "Months 1-3",
+                    "focus": f"Foundations of {jd_domain.replace('_', ' ').title()}",
+                    "activities": [
+                        f"Study foundational principles and domain concepts for {jd_domain.replace('_', ' ').title()}",
+                        f"Inventory transferable skills from your background in {resume_domain.replace('_', ' ').title()}"
+                    ]
                 }
             ]
-        },
-        temperature=0.3
-    )
-    
-    return response
+        }
 
 
 async def generate_transition_tips(resume_domain: str, jd_domain: str, resume: str, jd: str) -> dict:
@@ -118,15 +136,26 @@ async def generate_transition_tips(resume_domain: str, jd_domain: str, resume: s
         jd=jd
     )
     
-    response = await client.generate_structured_content(
-        prompt=prompt,
-        output_schema={
-            "education": [{"name": "string", "platform": "string", "url": "string"}],
-            "certifications": [{"name": "string", "provider": "string", "url": "string"}],
-            "portfolio": [{"name": "string", "description": "string", "url": "string"}],
-            "resume_strategy": ["string"]
-        },
-        temperature=0.3
-    )
-    
-    return response
+    try:
+        response = await client.generate_structured_content(
+            prompt=prompt,
+            output_schema={
+                "education": [{"name": "string", "platform": "string", "url": "string"}],
+                "certifications": [{"name": "string", "provider": "string", "url": "string"}],
+                "portfolio": [{"name": "string", "description": "string", "url": "string"}],
+                "resume_strategy": ["string"]
+            },
+            temperature=0.3
+        )
+        return response
+    except Exception as e:
+        logger.error(f"Failed to generate transition tips: {e}")
+        return {
+            "education": [],
+            "certifications": [],
+            "portfolio": [],
+            "resume_strategy": [
+                f"Highlight transferable competencies from {resume_domain.replace('_', ' ').title()}",
+                f"Frame previous responsibilities around methodologies relevant to {jd_domain.replace('_', ' ').title()}"
+            ]
+        }

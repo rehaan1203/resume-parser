@@ -4,7 +4,15 @@ from typing import Dict, Any
 def validate_and_override(payload: Dict[str, Any]) -> Dict[str, Any]:
     """Ensures deterministic consistency rules are met across the final response."""
     
-    score = payload.get("overall_score", 0)
+    score = payload.get("overall_score")
+    if score is None:
+        payload["cross_validation_status"] = {
+            "passed": True,
+            "checks_performed": ["null_score_bypass"],
+            "overrides_applied": []
+        }
+        return payload
+
     seniority = payload.get("seniority_analysis", {})
     friction = payload.get("friction_points", [])
     gaps = payload.get("skill_gaps", [])

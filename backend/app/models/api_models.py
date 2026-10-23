@@ -57,7 +57,9 @@ class AnalysisResponse(BaseModel):
         json_encoders={datetime: lambda v: v.isoformat()}
     )
     id: Optional[str] = Field(None, description="Unique analysis ID")
-    overall_score: int = Field(..., ge=0, le=100, alias="overallScore")
+    overall_score: Optional[int] = Field(None, ge=0, le=100, alias="overallScore")
+    skills_detected: Optional[int] = Field(None, alias="skillsDetected")
+    low_confidence: Optional[bool] = Field(None, alias="lowConfidence")
     friction_points: List[Dict[str, Any]] = Field(default_factory=list, alias="frictionPoints")
     skill_gaps: List[str] = Field(default_factory=list, alias="skillGaps")
     strengths: List[str] = Field(default_factory=list)

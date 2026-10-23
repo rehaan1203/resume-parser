@@ -16,6 +16,7 @@ import { ExecutiveSummary } from '../components/results/ExecutiveSummary';
 import { ATSOptimizationTips } from '../components/results/ATSOptimizationTips';
 import { SeniorityAlignment } from '../components/results/SeniorityAlignment';
 import { DomainMismatchCard } from '../components/results/DomainMismatchCard';
+import { UnparseableJdCard } from '../components/results/UnparseableJdCard';
 import { useState, useEffect, useRef } from 'react';
 
 export default function Home() {
@@ -39,13 +40,29 @@ export default function Home() {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
+    const handleEditJobDescription = () => {
+        topRef.current?.scrollIntoView({ behavior: 'smooth' });
+        setTimeout(() => {
+            const jdElem = document.getElementById('jd-input-textarea');
+            if (jdElem) {
+                jdElem.focus();
+            }
+        }, 300);
+    };
+
+    const detectedCount = results ? (results.skillsDetected ?? results.skills_detected) : null;
+    const isCountNumber = typeof detectedCount === 'number' && !Number.isNaN(detectedCount);
+    const lowEvidenceNotice = isCountNumber
+        ? `Only ${detectedCount} recognized ${detectedCount === 1 ? 'skill was' : 'skills were'} detected in this job description.`
+        : 'Few recognized skills were detected in this job description.';
+
     return (
         <div className="w-full" ref={topRef}>
             <motion.div 
                 initial={{ opacity: 0, y: 20 }} 
                 animate={{ opacity: 1, y: 0 }} 
                 transition={{ duration: 0.5 }}
-                className="pb-12"
+                className="space-y-12"
             >
                 <Hero />
                 <AnalysisForm />
@@ -84,11 +101,32 @@ export default function Home() {
 
                             {results.status === 'domain_mismatch' ? (
                                 <DomainMismatchCard result={results} />
+                            ) : results.status === 'unparseable_jd' ? (
+                                <UnparseableJdCard message={results.message} onEditJd={handleEditJobDescription} />
                             ) : (
                                 <>
+                                    {(results.lowConfidence || results.low_confidence) && (
+                                        <div className="mb-8 bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-amber-800 dark:text-amber-300">
+                                            <div className="flex items-center gap-3">
+                                                <AlertTriangle className="w-5 h-5 flex-shrink-0 text-amber-600 dark:text-amber-400" />
+                                                <p className="text-sm">
+                                                    <strong className="font-semibold">Low Evidence Notice:</strong> {lowEvidenceNotice} Match scores and gap insights may be less reliable.
+                                                </p>
+                                            </div>
+                                            <Button 
+                                                variant="outline" 
+                                                size="sm" 
+                                                onClick={handleEditJobDescription}
+                                                className="flex-shrink-0 border-amber-500/40 text-amber-900 dark:text-amber-200 hover:bg-amber-500/15"
+                                            >
+                                                Edit job description
+                                            </Button>
+                                        </div>
+                                    )}
+
                                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-8">
                                         <div className="lg:col-span-4 space-y-8 sticky top-8 self-start">
-                                            <ScoreCard score={results.overallScore || results.overall_score} breakdown={results.scoreBreakdown || results.score_breakdown} />
+                                            <ScoreCard score={results.overallScore ?? results.overall_score} breakdown={results.scoreBreakdown || results.score_breakdown} />
                                             <SkillGapList gaps={results.skillGaps || results.skill_gaps} />
                                             <StrengthList strengths={results.strengths} />
                                         </div>

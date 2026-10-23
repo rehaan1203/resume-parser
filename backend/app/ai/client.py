@@ -8,6 +8,7 @@ from mistralai.async_client import MistralAsyncClient
 from mistralai.models.chat_completion import ChatMessage
 from app.config import settings
 from app.utils.logger import logger
+from app.utils.exceptions import LLMTruncationError
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
 import httpx
@@ -31,7 +32,8 @@ class GenAIClient:
         # MISTRAL CONFIGURATION
         if not settings.mistral_api_key:
             raise ValueError("MISTRAL_API_KEY not set")
-        self.client = MistralAsyncClient(api_key=settings.mistral_api_key)
+        endpoint = "https://codestral.mistral.ai" if settings.mistral_api_key.startswith("mstrl_") else "https://api.mistral.ai"
+        self.client = MistralAsyncClient(api_key=settings.mistral_api_key, endpoint=endpoint)
 
         self.max_retries = settings.ai_max_retries
         self.timeout = settings.ai_timeout_seconds
@@ -69,10 +71,11 @@ class GenAIClient:
             # else:
             #     raise ValueError("No content returned from API")
 
-            # MISTRAL IMPLEMENTATION
-            # If the user asks for gemini, fallback to mistral for now
-            if "gemini" in model:
-                model = "mistral-small-latest"
+            # MISTRAL / CODESTRAL IMPLEMENTATION
+            if settings.mistral_api_key and settings.mistral_api_key.startswith("mstrl_"):
+                model = "codestral-latest"
+            elif "gemini" in model:
+                model = settings.ai_model or "mistral-small-latest"
                 
             response = await self.client.chat(
                 model=model,
@@ -84,10 +87,28 @@ class GenAIClient:
             elapsed = (time.time() - start_time) * 1000
             logger.info(f"Content generated in {elapsed:.0f}ms")
 
-            if response.choices and response.choices[0].message.content:
-                return response.choices[0].message.content
+            if hasattr(response, "usage") and response.usage:
+                completion_tokens = getattr(response.usage, "completion_tokens", 0)
+                logger.info(f"LLM token usage: completion_tokens={completion_tokens}")
             else:
+                completion_tokens = 0
+
+            if not response.choices or not response.choices[0].message.content:
                 raise ValueError("No content returned from API")
+
+            choice = response.choices[0]
+            finish_reason = getattr(choice, "finish_reason", None)
+            if finish_reason in ["length", "model_length"]:
+                logger.warning(
+                    f"LLM response truncated by model: finish_reason='{finish_reason}', "
+                    f"completion_tokens={completion_tokens}"
+                )
+                raise LLMTruncationError(
+                    f"LLM response was truncated due to length limit (finish_reason='{finish_reason}')",
+                    completion_tokens=completion_tokens
+                )
+
+            return choice.message.content
 
         except Exception as e:
             logger.error(f"Content generation failed: {e}")
