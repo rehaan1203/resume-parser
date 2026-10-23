@@ -24,10 +24,18 @@ RESUME_TEST_CASES = [
     ("Python for 3 years, Docker for 2 years", "not_found", None),
     ("0 years of experience", "explicit_zero", 0),
     ("no prior work experience", "explicit_zero", 0),
-    ("no experience", "explicit_zero", 0),
+    ("no experience", "not_found", None),  # Bare "no experience" is a hint only
+    ("no professional experience", "explicit_zero", 0),
+    ("no experience in the workforce", "explicit_zero", 0),
     ("Senior developer with 8 years of professional experience", "found", 8),
     ("Nurse with 5 years in intensive care", "found", 5),
     ("two decades of experience in law", "found", 20),
+    ("No experience with Kubernetes, but 8 years of experience in Python", "found", 8),
+    ("limited experience in Java", "not_found", None),
+    ("no experience gaps in 12 years of nursing", "found", 12),
+    ("no experience with Docker; 8 years of experience as an accountant", "found", 8),
+    ("5 years in Python", "not_found", None),
+    ("2 years in sales; 6 years in finance", "found", 6),
 ]
 
 JD_TEST_CASES = [
