@@ -51,6 +51,7 @@ class Settings(BaseSettings):
 
     # Scoring & Evidence Settings
     low_evidence_threshold: int = 3
+    orchestrator_progress_delay: float = 0.3
 
     # Tavily API
     tavily_api_key: Optional[str] = None

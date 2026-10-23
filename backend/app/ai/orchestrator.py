@@ -16,6 +16,7 @@ from app.utils.friction_generator import generate_friction_and_strengths
 # Phase 4
 from app.utils.cross_validator import validate_and_override
 
+from app.config import settings
 from app.utils.link_processor import LinkProcessor
 
 class DeterministicOrchestrator:
@@ -30,15 +31,16 @@ class DeterministicOrchestrator:
                     await progress_callback(prog, msg)
                 else:
                     progress_callback(prog, msg)
+            delay = getattr(settings, "orchestrator_progress_delay", 0.3)
+            if delay > 0:
+                await asyncio.sleep(delay)
 
         await report(5, "Parsing resume and job description...")
-        await asyncio.sleep(0.3)
         resume_text = request_data.get("resume", "") or request_data.get("resume_text", "")
         jd_text = request_data.get("jd_text", "") or request_data.get("job_description", "")
         
         # --- PHASE 1: Deterministic Parser ---
         await report(10, "Detecting professional domain...")
-        await asyncio.sleep(0.3)
         candidate_years = await extract_years_experience(resume_text)
         required_years = await extract_years_experience(jd_text)
         if required_years == 0:
@@ -87,7 +89,6 @@ class DeterministicOrchestrator:
             }
         
         await report(15, "Extracting and comparing skills...")
-        await asyncio.sleep(0.3)
         resume_skills = extract_skills(resume_text)
         jd_skills = extract_skills(jd_text)
         skills_detected = len(jd_skills)
@@ -122,12 +123,10 @@ class DeterministicOrchestrator:
             }
 
         matching_skills, missing_skills = compare_skills(resume_skills, jd_skills)
-        from app.config import settings
         low_confidence = skills_detected < settings.low_evidence_threshold
 
         # --- PHASE 2: Centralized Calculator ---
         await report(20, "Calculating match score...")
-        await asyncio.sleep(0.3)
         skills_score = calculate_skills_score(len(matching_skills), len(jd_skills))
         seniority_analysis = calculate_seniority_score_and_gap(candidate_years, required_years)
         
@@ -140,7 +139,6 @@ class DeterministicOrchestrator:
             overall_score = calculate_overall_score(skills_score, seniority_analysis["seniority_score"])
         
         await report(25, "Analyzing skill gaps...")
-        await asyncio.sleep(0.3)
         friction_data = generate_friction_and_strengths(
             matching_skills=matching_skills,
             missing_skills=missing_skills,
@@ -152,7 +150,6 @@ class DeterministicOrchestrator:
         
         # --- PHASE 3: LLM Explains ---
         await report(30, "Preparing data for insights...")
-        await asyncio.sleep(0.3)
         from app.ai.explainer import Phase3Explainer
         explainer = Phase3Explainer()
         
