@@ -1,7 +1,51 @@
 import pytest
+from unittest.mock import AsyncMock, patch
 from httpx import AsyncClient, ASGITransport
 from app.main import app
 from datetime import datetime
+
+@pytest.fixture(autouse=True)
+def mock_external_services(monkeypatch):
+    """Hermetic test fixture mocking all external network, AI, and cache services."""
+    from app.config import settings
+    monkeypatch.setattr(settings, "google_api_key", settings.google_api_key or "mock-google-key")
+    monkeypatch.setattr(settings, "mistral_api_key", settings.mistral_api_key or "mock-mistral-key")
+    monkeypatch.setattr(settings, "tavily_api_key", settings.tavily_api_key or "mock-tavily-key")
+    monkeypatch.setattr(settings, "cache_enabled", False)
+
+    with patch("app.utils.link_processor.LinkProcessor.process_response", new_callable=AsyncMock) as mock_links, \
+         patch("app.ai.explainer.Phase3Explainer.generate_executive_summary", new_callable=AsyncMock) as mock_exec, \
+         patch("app.ai.explainer.Phase3Explainer.generate_ats_optimization", new_callable=AsyncMock) as mock_ats, \
+         patch("app.ai.explainer.Phase3Explainer.generate_seniority_alignment", new_callable=AsyncMock) as mock_sen, \
+         patch("app.ai.explainer.Phase3Explainer.generate_roadmap", new_callable=AsyncMock) as mock_rd, \
+         patch("app.ai.explainer.Phase3Explainer.generate_mismatch_message", new_callable=AsyncMock) as mock_mismatch, \
+         patch("app.ai.client.GenAIClient.generate_content", new_callable=AsyncMock) as mock_gen_content, \
+         patch("app.ai.client.GenAIClient.generate_structured_content", new_callable=AsyncMock) as mock_gen_structured, \
+         patch("app.utils.redis_client.RedisClient.ping", new_callable=AsyncMock) as mock_redis_ping, \
+         patch("asyncio.sleep", new_callable=AsyncMock):
+        
+        mock_links.side_effect = lambda resp: resp
+        mock_exec.return_value = "Candidate shows strong alignment with the technical requirements."
+        mock_ats.return_value = {
+            "keywords": ["Python", "SQL", "Docker"],
+            "phrasing": [],
+            "formatting_tips": ["Use standard formatting"]
+        }
+        mock_sen.return_value = {
+            "alignment_summary": "Meets required seniority level.",
+            "advice": "Seniority matches requirements."
+        }
+        mock_rd.return_value = {
+            "type": "standard_upskill",
+            "title": "Learning Roadmap",
+            "weeks": []
+        }
+        mock_mismatch.return_value = "Domain mismatch detected."
+        mock_gen_content.return_value = "{}"
+        mock_gen_structured.return_value = {}
+        mock_redis_ping.return_value = False
+        
+        yield
 
 @pytest.mark.asyncio
 async def test_health_check():
