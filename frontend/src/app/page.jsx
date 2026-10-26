@@ -131,6 +131,7 @@ export default function Home() {
                                                 breakdown={results.scoreBreakdown || results.score_breakdown} 
                                                 seniorityReason={results.seniorityReason || results.seniority_reason}
                                                 seniorityStatus={results.seniorityStatus || results.seniority_status}
+                                                lowConfidence={results.lowConfidence ?? results.low_confidence}
                                             />
                                             <SkillGapList gaps={results.skillGaps || results.skill_gaps} />
                                             <StrengthList strengths={results.strengths} />
