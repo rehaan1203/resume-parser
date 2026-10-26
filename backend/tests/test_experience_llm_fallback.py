@@ -16,7 +16,8 @@ async def test_candidate_llm_found_valid_quote():
     mock_client.generate_structured_content.return_value = {
         "status": "found",
         "years": 7,
-        "evidence_quote": "over seven years working in software"
+        "evidence_quote": "over seven years working in software",
+        "scope": "total_career"
     }
     resume_text = "Senior developer with over seven years working in software architecture and systems."
     res = await extract_candidate_experience_with_llm(resume_text, client=mock_client)
@@ -32,7 +33,8 @@ async def test_candidate_llm_found_invalid_quote_downgrades():
     mock_client.generate_structured_content.return_value = {
         "status": "found",
         "years": 10,
-        "evidence_quote": "10 years of experience at Google"
+        "evidence_quote": "10 years of experience at Google",
+        "scope": "total_career"
     }
     resume_text = "Senior developer who worked on various distributed backend projects."
     res = await extract_candidate_experience_with_llm(resume_text, client=mock_client)
@@ -46,7 +48,8 @@ async def test_candidate_llm_explicit_zero():
     mock_client.generate_structured_content.return_value = {
         "status": "explicit_zero",
         "years": 0,
-        "evidence_quote": "no prior professional experience"
+        "evidence_quote": "no prior professional experience",
+        "scope": "total_career"
     }
     resume_text = "Computer science graduate with no prior professional experience seeking first role."
     res = await extract_candidate_experience_with_llm(resume_text, client=mock_client)
@@ -128,7 +131,8 @@ async def test_candidate_llm_adversarial_graduated_ago():
     mock_client.generate_structured_content.return_value = {
         "status": "found",
         "years": 5,
-        "evidence_quote": "graduated 5 years ago"
+        "evidence_quote": "graduated 5 years ago",
+        "scope": "other"
     }
     resume_text = "Software engineer who graduated 5 years ago with computer science degree."
     res = await extract_candidate_experience_with_llm(resume_text, client=mock_client)
@@ -143,9 +147,26 @@ async def test_candidate_llm_adversarial_skill_duration():
     mock_client.generate_structured_content.return_value = {
         "status": "found",
         "years": 3,
-        "evidence_quote": "Python for 3 years"
+        "evidence_quote": "Python for 3 years",
+        "scope": "skill_or_tool"
     }
     resume_text = "Backend engineer writing Python for 3 years building web applications."
+    res = await extract_candidate_experience_with_llm(resume_text, client=mock_client)
+    assert res.status == "not_found"
+    assert res.years is None
+
+
+@pytest.mark.asyncio
+async def test_candidate_llm_scope_not_total_career_rejected():
+    """Valid quote with non-total_career scope (e.g. skill_or_tool) is rejected and downgrades to not_found."""
+    mock_client = AsyncMock()
+    mock_client.generate_structured_content.return_value = {
+        "status": "found",
+        "years": 5,
+        "evidence_quote": "5 years in FastAPI",
+        "scope": "skill_or_tool"
+    }
+    resume_text = "Built high-performance microservices with 5 years in FastAPI and Python."
     res = await extract_candidate_experience_with_llm(resume_text, client=mock_client)
     assert res.status == "not_found"
     assert res.years is None
@@ -158,7 +179,8 @@ async def test_candidate_llm_adversarial_quote_not_in_text():
     mock_client.generate_structured_content.return_value = {
         "status": "found",
         "years": 8,
-        "evidence_quote": "8 years of total experience leading teams"
+        "evidence_quote": "8 years of total experience leading teams",
+        "scope": "total_career"
     }
     resume_text = "Full stack developer proficient in React, Node, and Postgres."
     res = await extract_candidate_experience_with_llm(resume_text, client=mock_client)
@@ -173,7 +195,8 @@ async def test_candidate_llm_number_word_ten_years():
     mock_client.generate_structured_content.return_value = {
         "status": "found",
         "years": 10,
-        "evidence_quote": "a career spanning ten years"
+        "evidence_quote": "a career spanning ten years",
+        "scope": "total_career"
     }
     resume_text = "Staff product manager possessing a career spanning ten years leading enterprise systems."
     res = await extract_candidate_experience_with_llm(resume_text, client=mock_client)
@@ -190,7 +213,8 @@ async def test_candidate_llm_number_word_a_decade():
     mock_client.generate_structured_content.return_value = {
         "status": "found",
         "years": 10,
-        "evidence_quote": "a career spanning a decade"
+        "evidence_quote": "a career spanning a decade",
+        "scope": "total_career"
     }
     resume_text = "Staff product manager possessing a career spanning a decade leading enterprise systems."
     res = await extract_candidate_experience_with_llm(resume_text, client=mock_client)
@@ -207,7 +231,8 @@ async def test_candidate_llm_adversarial_explicit_zero_not_whole_career():
     mock_client.generate_structured_content.return_value = {
         "status": "explicit_zero",
         "years": 0,
-        "evidence_quote": "no experience with Kubernetes"
+        "evidence_quote": "no experience with Kubernetes",
+        "scope": "skill_or_tool"
     }
     resume_text = "Senior developer with extensive backend skills and no experience with Kubernetes."
     res = await extract_candidate_experience_with_llm(resume_text, client=mock_client)
@@ -222,7 +247,8 @@ async def test_candidate_llm_seeking_entry_level_gives_not_found():
     mock_client.generate_structured_content.return_value = {
         "status": "explicit_zero",
         "years": 0,
-        "evidence_quote": "seeking entry-level roles"
+        "evidence_quote": "seeking entry-level roles",
+        "scope": "other"
     }
     resume_text = "Computer science graduate seeking entry-level roles in backend development."
     res = await extract_candidate_experience_with_llm(resume_text, client=mock_client)
@@ -250,44 +276,48 @@ async def test_jd_llm_entry_level_position_gives_explicit_zero():
 
 
 ADVERSARIAL_QUOTES_MATRIX = [
-    ("graduated 5 years ago", "Candidate graduated 5 years ago from university", 5, "candidate", False),
-    ("35 years of age", "Candidate is 35 years of age", 35, "candidate", False),
-    ("28 years old", "Senior developer, 28 years old", 28, "candidate", False),
-    ("Python for 3 years", "Used Python for 3 years building APIs", 3, "candidate", False),
-    ("5 years in FastAPI", "Built backends with 5 years in FastAPI", 5, "candidate", False),
-    ("6 years of Terraform", "Infrastructure management with 6 years of Terraform", 6, "candidate", False),
-    ("6 years of Excel", "Financial modeling with 6 years of Excel", 6, "candidate", False),
-    ("4 years with Kubernetes", "Container orchestration with 4 years with Kubernetes", 4, "candidate", False),
-    ("3 years using React", "Frontend UI with 3 years using React", 3, "candidate", False),
-    ("4 years in college", "Completed 4 years in college studying CS", 4, "candidate", False),
-    ("4 years of university", "Spent 4 years of university in engineering", 4, "candidate", False),
-    ("3 years of study", "After 3 years of study in physics", 3, "candidate", False),
-    ("seeking entry-level roles", "Graduate seeking entry-level roles", 0, "candidate", False),
-    ("recent graduate with 0 years", "A recent graduate with 0 years on the job", 0, "candidate", False),
-    ("0-2 years required", "Requires 0-2 years experience", 0, "candidate", False),
+    ("graduated 5 years ago", "Candidate graduated 5 years ago from university", 5, "candidate", "other", False),
+    ("35 years of age", "Candidate is 35 years of age", 35, "candidate", "other", False),
+    ("28 years old", "Senior developer, 28 years old", 28, "candidate", "other", False),
+    ("Python for 3 years", "Used Python for 3 years building APIs", 3, "candidate", "skill_or_tool", False),
+    ("5 years in FastAPI", "Built backends with 5 years in FastAPI", 5, "candidate", "skill_or_tool", False),
+    ("6 years of Terraform", "Infrastructure management with 6 years of Terraform", 6, "candidate", "skill_or_tool", False),
+    ("6 years of Excel", "Financial modeling with 6 years of Excel", 6, "candidate", "skill_or_tool", False),
+    ("4 years with Kubernetes", "Container orchestration with 4 years with Kubernetes", 4, "candidate", "skill_or_tool", False),
+    ("3 years using React", "Frontend UI with 3 years using React", 3, "candidate", "skill_or_tool", False),
+    ("4 years in college", "Completed 4 years in college studying CS", 4, "candidate", "education", False),
+    ("4 years of university", "Spent 4 years of university in engineering", 4, "candidate", "education", False),
+    ("3 years of study", "After 3 years of study in physics", 3, "candidate", "education", False),
+    ("seeking entry-level roles", "Graduate seeking entry-level roles", 0, "candidate", "other", False),
+    ("recent graduate with 0 years", "A recent graduate with 0 years on the job", 0, "candidate", "other", False),
+    ("0-2 years required", "Requires 0-2 years experience", 0, "candidate", "other", False),
 ]
 
 GENUINE_QUOTES_MATRIX = [
-    ("8 years of professional experience", "Senior dev with 8 years of professional experience", 8, "candidate", True),
-    ("10 years of nursing experience", "RN with 10 years of nursing experience in ICU", 10, "candidate", True),
-    ("12 years of legal practice", "Attorney with 12 years of legal practice", 12, "candidate", True),
-    ("6 years in the teaching profession", "Educator with 6 years in the teaching profession", 6, "candidate", True),
-    ("15 years of industry experience", "Manager with 15 years of industry experience", 15, "candidate", True),
-    ("7 years of clinical experience", "Physician with 7 years of clinical experience", 7, "candidate", True),
-    ("8 years as an accountant", "CPA with 8 years as an accountant", 8, "candidate", True),
-    ("a decade of experience in corporate finance", "Analyst with a decade of experience in corporate finance", 10, "candidate", True),
-    ("over 5 years of work experience in carpentry", "Carpenter with over 5 years of work experience in carpentry", 5, "candidate", True),
-    ("14 years in the culinary industry", "Executive Chef with 14 years in the culinary industry", 14, "candidate", True),
-    ("two decades of career experience in architecture", "Lead Architect with two decades of career experience in architecture", 20, "candidate", True),
-    ("3 years of experience as a dental hygienist", "Clinician with 3 years of experience as a dental hygienist", 3, "candidate", True),
-    ("9 years of experience in supply chain", "Logistics specialist with 9 years of experience in supply chain", 9, "candidate", True),
-    ("0 years of experience", "Junior applicant with 0 years of experience", 0, "candidate", True),
-    ("no prior work experience", "First-time job seeker with no prior work experience", 0, "candidate", True),
+    ("8 years of professional experience", "Senior dev with 8 years of professional experience", 8, "candidate", "total_career", True),
+    ("10 years of nursing experience", "RN with 10 years of nursing experience in ICU", 10, "candidate", "total_career", True),
+    ("10+ years in nursing", "RN with 10+ years in nursing across critical care", 10, "candidate", "total_career", True),
+    ("A decade in medicine", "Physician with A decade in medicine and clinical practice", 10, "candidate", "total_career", True),
+    ("12 years of legal practice", "Attorney with 12 years of legal practice", 12, "candidate", "total_career", True),
+    ("6 years in the teaching profession", "Educator with 6 years in the teaching profession", 6, "candidate", "total_career", True),
+    ("7 years in sales", "Account executive with 7 years in sales closing enterprise deals", 7, "candidate", "total_career", True),
+    ("15 years of industry experience", "Manager with 15 years of industry experience", 15, "candidate", "total_career", True),
+    ("7 years of clinical experience", "Physician with 7 years of clinical experience", 7, "candidate", "total_career", True),
+    ("8 years as an accountant", "CPA with 8 years as an accountant", 8, "candidate", "total_career", True),
+    ("a decade of experience in corporate finance", "Analyst with a decade of experience in corporate finance", 10, "candidate", "total_career", True),
+    ("over 5 years of work experience in carpentry", "Carpenter with over 5 years of work experience in carpentry", 5, "candidate", "total_career", True),
+    ("14 years in the culinary industry", "Executive Chef with 14 years in the culinary industry", 14, "candidate", "total_career", True),
+    ("two decades of career experience in architecture", "Lead Architect with two decades of career experience in architecture", 20, "candidate", "total_career", True),
+    ("3 years of experience as a dental hygienist", "Clinician with 3 years of experience as a dental hygienist", 3, "candidate", "total_career", True),
+    ("9 years of experience in supply chain", "Logistics specialist with 9 years of experience in supply chain", 9, "candidate", "total_career", True),
+    ("0 years of experience", "Junior applicant with 0 years of experience", 0, "candidate", "total_career", True),
+    ("no prior work experience", "First-time job seeker with no prior work experience", 0, "candidate", "total_career", True),
 ]
 
-@pytest.mark.parametrize("quote,source,years,mode,expected_valid", ADVERSARIAL_QUOTES_MATRIX + GENUINE_QUOTES_MATRIX)
-def test_verify_evidence_quote_comprehensive_matrix(quote, source, years, mode, expected_valid):
-    """Directly assert evidence quote verification across 15 adversarial and 15 genuine profession quotes."""
-    assert verify_evidence_quote(quote, source, years, mode=mode) is expected_valid
+@pytest.mark.parametrize("quote,source,years,mode,scope,expected_valid", ADVERSARIAL_QUOTES_MATRIX + GENUINE_QUOTES_MATRIX)
+def test_verify_evidence_quote_comprehensive_matrix(quote, source, years, mode, scope, expected_valid):
+    """Directly assert evidence quote verification across adversarial and genuine profession quotes with scope."""
+    assert verify_evidence_quote(quote, source, years, mode=mode, scope=scope) is expected_valid
+
 
 

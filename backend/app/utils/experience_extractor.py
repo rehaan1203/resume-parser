@@ -50,12 +50,19 @@ def verify_evidence_quote(
     quote: Optional[str],
     source_text: str,
     years: Optional[int],
-    mode: str = "candidate"
+    mode: str = "candidate",
+    scope: Optional[str] = None
 ) -> bool:
     """
-    Verify that quote exists in source text (case and whitespace normalized) and contains stated years.
-    Applies mode-aware zero verification, ago/old filters, education tenure rejection,
-    and generic skill/tool tenure rejection across all professions.
+    Verify that an LLM-extracted evidence quote actually supports the claim.
+    Rules:
+    - Quote must exist verbatim (normalized) in the source text.
+    - Stated years must be in [0, 50] and not a calendar year (1950..2100).
+    - If scope is provided (candidate LLM extraction), only 'total_career' is accepted.
+    - Number must sit next to 'years', 'yrs', or 'decade(s)'.
+    - 'ago', 'old', '-old', '-year-old', 'of age' are rejected.
+    - 'college', 'university', 'study', 'studies', 'school', 'education', 'degree' are rejected.
+    - Zero quotes must match explicit whole-career zero indicators (mode-aware).
     """
     if not quote or not source_text:
         return False
@@ -67,6 +74,10 @@ def verify_evidence_quote(
     if years is not None:
         if years < 0 or years > 50 or (1950 <= years <= 2100):
             return False
+
+    # Scope check: if provided, code accepts only 'total_career'
+    if scope is not None and scope != "total_career":
+        return False
 
     # 1. Zero handling (mode-aware)
     if years == 0:
@@ -85,43 +96,36 @@ def verify_evidence_quote(
             ]
             return any(re.search(p, norm_quote) for p in jd_zero_patterns)
 
-    # 2. Elapsed time / age filters
+    # 2. Elapsed time / age filters (ago, old, of age)
     if re.search(r'\b(?:\d+|' + NUM_PATTERN.replace('(', '(?:') + r')\s*years?\s*(?:ago\b|old\b|-old\b|-year-old\b|of\s+age\b)', norm_quote):
         return False
     if "graduated" in norm_quote and "ago" in norm_quote:
         return False
-
-    # 3. Education tenure filters
-    if re.search(r'\b(?:\d+|' + NUM_PATTERN.replace('(', '(?:') + r')\+?\s*years?\s*(?:in|of)\s+(?:college|university|school|study|studies|education|degree)\b', norm_quote):
+    if re.search(r'\b(?:of\s+age|-year-old|-old\b|years?\s+old\b)', norm_quote):
         return False
 
-    # 4. Tool/skill specific duration without experience anchor: "<Skill> for N years"
-    if re.search(r'\b[a-z0-9#+.-]+\s+for\s+(?:\d+|' + NUM_PATTERN.replace('(', '(?:') + r')\s*years?\b', norm_quote):
+    # 3. Education tenure filters (college, university, study, school, education, degree)
+    if re.search(r'\b(?:college|university|school|study|studies|education|degree)\b', norm_quote):
         return False
 
-    # 5. Generic experience anchor requirement:
-    # Genuine total/overall quotes anchor on experience words, practice, or role
-    has_experience_anchor = bool(re.search(
-        r'\b(?:experience|exp|practice|career|industry|field|profession|workforce|work|working|operations)\b',
+    # 4. Number sits next to years / yrs / decade / decades
+    has_year_proximity = bool(re.search(
+        r'\b(?:' + NUM_PATTERN.replace('(', '(?:') + r'|\d+)\+?\s*(?:years?|yrs?|decades?)\b',
         norm_quote
     ))
-    m_role = re.search(r'\bas\s+(?:a|an)\s+([a-z]+(?:\s+[a-z]+)?)\b', norm_quote)
-    has_valid_role = False
-    if m_role:
-        role_word = m_role.group(1).split()[0]
-        if role_word not in ROLE_STOPLIST and m_role.group(1) not in ROLE_STOPLIST:
-            has_valid_role = True
-
-    if not (has_experience_anchor or has_valid_role):
+    has_decade_proximity = bool(re.search(r'\b(?:a|one|two|\d+)\s+decades?\b', norm_quote))
+    if not (has_year_proximity or has_decade_proximity):
         return False
 
-    # 6. Check that stated year (digit, number word, or 'decade'/'decades') exists in quote
+    # 5. Check that stated year matches the number in the quote
     if years is not None:
         num_str = str(years)
         words_for_year = [w for w, v in NUMBER_WORDS.items() if v == years]
         has_digit = bool(re.search(r'\b' + re.escape(num_str) + r'\b', norm_quote))
         has_word = any(re.search(r'\b' + re.escape(w) + r'\b', norm_quote) for w in words_for_year)
-        if years == 20 and re.search(r'\b(?:two|2)\s*decades\b', norm_quote):
+        if years == 10 and re.search(r'\b(?:a|one)\s+decade\b', norm_quote):
+            has_word = True
+        elif years == 20 and re.search(r'\b(?:two|2)\s*decades\b', norm_quote):
             has_word = True
         if not (has_digit or has_word):
             return False
@@ -247,24 +251,31 @@ async def extract_candidate_experience_with_llm(
             output_schema={
                 "status": "string",
                 "years": 0,
-                "evidence_quote": "string"
+                "evidence_quote": "string",
+                "scope": "string"
             },
             temperature=0.0
         )
         status = raw_response.get("status")
         years = raw_response.get("years")
         quote = raw_response.get("evidence_quote")
+        scope = raw_response.get("scope")
 
         if status == "found":
             if not isinstance(years, int) or years < 0 or years > 50:
                 return ExperienceResult(status="not_found", years=None, source="llm")
-            if not verify_evidence_quote(quote, resume_text, years, mode="candidate"):
+            if scope != "total_career":
+                logger.warning(f"Candidate experience rejected due to scope {scope!r} != 'total_career': quote={quote!r}")
+                return ExperienceResult(status="not_found", years=None, source="llm")
+            if not verify_evidence_quote(quote, resume_text, years, mode="candidate", scope=scope):
                 logger.warning(f"Candidate experience quote verification failed: quote={quote!r}, years={years}")
                 return ExperienceResult(status="not_found", years=None, source="llm")
             return ExperienceResult(status="found", years=years, source="llm", evidence=quote)
 
         elif status == "explicit_zero":
-            if quote and not verify_evidence_quote(quote, resume_text, 0, mode="candidate"):
+            if scope and scope != "total_career":
+                return ExperienceResult(status="not_found", years=None, source="llm")
+            if quote and not verify_evidence_quote(quote, resume_text, 0, mode="candidate", scope="total_career"):
                 return ExperienceResult(status="not_found", years=None, source="llm")
             return ExperienceResult(status="explicit_zero", years=0, source="llm", evidence=quote)
 
