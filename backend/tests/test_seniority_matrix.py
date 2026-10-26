@@ -163,3 +163,40 @@ async def test_benchmark_date_range_only_case(mock_external_orchestrator):
     assert result["score_breakdown"]["skills_match"] == 50
     # Must give exactly skills-only score: 50, NOT 46
     assert result["overall_score"] == 50
+
+
+@pytest.mark.asyncio
+async def test_entry_level_jd_candidate_extraction_and_strengths(mock_external_orchestrator):
+    """
+    Entry-level JD test:
+    Case 1: Resume has explicit zero years ('0 years of experience') -> cand status explicit_zero, source regex.
+            Match on entry-level JD.
+    Case 2: Resume has skills but no stated years (recent graduate, no '0 years' phrase) -> cand status not_found.
+            Seniority is unconfirmed. Strengths must NOT claim 'Total experience (0 years)'.
+    """
+    from app.utils.experience_extractor import extract_candidate_experience
+    # Case 1: Explicit zero stated
+    res_zero = extract_candidate_experience("Recent graduate with projects in Python and SQL. 0 years of experience.")
+    assert res_zero.status == "explicit_zero"
+    assert res_zero.source == "regex"
+    assert res_zero.years == 0
+
+    # Case 2: No stated years
+    res_no_years = extract_candidate_experience("Recent graduate with projects in Python and SQL.")
+    assert res_no_years.status == "not_found"
+    assert res_no_years.years is None
+
+    orchestrator = DeterministicOrchestrator()
+    request_data = {
+        "resume": "Recent graduate with projects in Python and SQL.",
+        "jd_text": "Entry-level software engineer. Freshers welcome, no experience required. Knowledge of Python."
+    }
+    result = await orchestrator.process(request_data)
+    assert result["seniority_status"] == "unconfirmed"
+    assert result["seniority_assessed"] is False
+    assert result["seniority_analysis"]["years_experience"] is None
+    # Verify strengths do NOT claim 0 years
+    for strength in result.get("strengths", []):
+        assert "0 years" not in strength.lower()
+        assert "total experience" not in strength.lower()
+
