@@ -19,7 +19,7 @@ This package houses all prompt templates, builder functions, and domain-specific
 | `roadmap_prompt.py` | 30-day, upskill, and career transition roadmaps | `build_upskill_roadmap_prompt()`, `build_transition_roadmap_prompt()`, `get_roadmap_weeks_count()`, `THIRTY_DAY_ROADMAP_PROMPT` |
 | `ats_prompt.py` | Standard, transition, and advanced ATS optimization | `build_standard_ats_prompt()`, `build_transition_ats_prompt()`, `build_transition_tips_prompt()`, `ATS_OPTIMIZATION_PROMPT` |
 | `seniority_prompt.py` | Seniority alignment and level gap analysis | `build_seniority_alignment_prompt()` |
-| `extraction_prompt.py` | Candidate experience extraction LLM fallbacks | `build_experience_extraction_prompt()` |
+| `extraction_prompt.py` | Candidate and JD experience extraction LLM fallbacks | `build_candidate_experience_prompt()`, `build_jd_experience_prompt()` |
 | `career_prompt.py` | Long-term career guidance & interview question generation | `INTERVIEW_QUESTIONS_PROMPT`, `CAREER_ADVICE_PROMPT` |
 
 ---

@@ -9,7 +9,7 @@ from app.ai.client import GenAIClient
 from app.prompts.extraction_prompt import (
     build_candidate_experience_prompt,
     build_jd_experience_prompt,
-    build_experience_extraction_prompt,
+    EXPERIENCE_EXTRACTION_PROMPT_VERSION,
 )
 
 @dataclass
@@ -336,8 +336,23 @@ async def extract_required_experience_with_llm(
     from app.config import settings
     max_chars = getattr(settings, "experience_llm_max_chars", 15000)
 
+    ai_client = client or GenAIClient()
+    model_name = getattr(ai_client, "model", None) or getattr(settings, "ai_model", "default")
+    jd_hash = hashlib.sha256(jd_text.encode('utf-8')).hexdigest()[:16]
+    cache_key = f"jd_exp:{EXPERIENCE_EXTRACTION_PROMPT_VERSION}:{model_name}:{jd_hash}"
+    cache_manager = CacheManager()
+
+    if getattr(settings, "cache_enabled", True):
+        cached = await cache_manager.get(cache_key)
+        if cached and isinstance(cached, dict):
+            return ExperienceResult(
+                status=cached.get("status", "not_specified"),
+                years=cached.get("years"),
+                source=cached.get("source", "llm"),
+                evidence=cached.get("evidence")
+            )
+
     try:
-        ai_client = client or GenAIClient()
         prompt = build_jd_experience_prompt(jd_text, max_chars=max_chars)
         raw_response = await ai_client.generate_structured_content(
             prompt=prompt,
@@ -352,21 +367,32 @@ async def extract_required_experience_with_llm(
         years = raw_response.get("years")
         quote = raw_response.get("evidence_quote")
 
+        result = None
         if status == "found":
             if not isinstance(years, int) or years < 0 or years > 50:
-                return ExperienceResult(status="not_specified", years=None, source="llm")
-            if not verify_evidence_quote(quote, jd_text, years, mode="jd"):
+                result = ExperienceResult(status="not_specified", years=None, source="llm")
+            elif not verify_evidence_quote(quote, jd_text, years, mode="jd"):
                 logger.warning(f"JD experience quote verification failed: quote={quote!r}, years={years}")
-                return ExperienceResult(status="not_specified", years=None, source="llm")
-            return ExperienceResult(status="found", years=years, source="llm", evidence=quote)
+                result = ExperienceResult(status="not_specified", years=None, source="llm")
+            else:
+                result = ExperienceResult(status="found", years=years, source="llm", evidence=quote)
 
         elif status == "explicit_zero":
             if quote and not verify_evidence_quote(quote, jd_text, 0, mode="jd"):
-                return ExperienceResult(status="not_specified", years=None, source="llm")
-            return ExperienceResult(status="explicit_zero", years=0, source="llm", evidence=quote)
+                result = ExperienceResult(status="not_specified", years=None, source="llm")
+            else:
+                result = ExperienceResult(status="explicit_zero", years=0, source="llm", evidence=quote)
 
         else:
-            return ExperienceResult(status="not_specified", years=None, source="llm")
+            result = ExperienceResult(status="not_specified", years=None, source="llm")
+
+        if getattr(settings, "cache_enabled", True) and result.status in ("found", "explicit_zero"):
+            await cache_manager.set(
+                cache_key,
+                {"status": result.status, "years": result.years, "source": result.source, "evidence": result.evidence},
+                ttl=getattr(settings, "cache_ttl_jd", 604800)
+            )
+        return result
 
     except Exception as e:
         logger.error(f"JD experience LLM extraction failed: {e}")
@@ -396,61 +422,4 @@ def _extract_jd_clause(text: str, matches: list):
             if val is not None and 0 <= val <= 50 and not (1950 <= val <= 2100):
                 matches.append((val, m.group(0)))
 
-async def extract_years_experience(text: str) -> int:
-    """
-    Legacy wrapper extracting years of experience.
-    Preserves existing signature and behavior for orchestrator until Stage 2 migration.
-    """
-    if not text:
-        return 0
 
-    patterns = [
-        r'(\d+)\+?\s*years?\s*of\s*experience',
-        r'(\d+)\s*\+\s*years?\s*experience',
-        r'(\d+)\+?\s*yrs?\s*exp',
-        r'minimum\s*of\s*(\d+)\s*years',
-        r'(\d+)(?:\s*to\s*\d+)?\s*years',
-    ]
-
-    years_found = []
-    for pattern in patterns:
-        for match in re.finditer(pattern, text, re.IGNORECASE):
-            after_text = text[match.end():match.end() + 20].lower()
-            if re.match(r'^\s*(?:ago\b|old\b|-old\b|-year-old\b)', after_text):
-                continue
-            try:
-                val = int(match.group(1))
-                if val > 50 or (1950 <= val <= 2100):
-                    continue
-                years_found.append(val)
-            except ValueError:
-                pass
-
-    if years_found:
-        return max(years_found)
-
-    # --- LLM Fallback (Regex Failed) ---
-    logger.warning("Regex extraction for years of experience failed. Falling back to LLM.")
-    text_hash = hashlib.md5(text.encode('utf-8')).hexdigest()
-    cache_key = f"exp_extract:{text_hash}"
-    cache_manager = CacheManager()
-
-    cached_years = await cache_manager.get(cache_key)
-    if cached_years is not None:
-        logger.info(f"Retrieved extracted years from cache: {cached_years}")
-        return int(cached_years)
-
-    try:
-        client = GenAIClient()
-        prompt = build_experience_extraction_prompt(text)
-        response = await client.generate_structured_content(
-            prompt=prompt,
-            output_schema={"years": 0}
-        )
-        years = response.get("years", 0)
-        await cache_manager.set(cache_key, years, ttl=86400)
-        logger.info(f"LLM successfully extracted {years} years of experience.")
-        return years
-    except Exception as e:
-        logger.error(f"LLM fallback for experience extraction failed: {e}")
-        return 0

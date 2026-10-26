@@ -141,9 +141,32 @@ async def test_analyze_endpoint_unparseable_jd(llm_tracker):
         assert data["overallScore"] is None
         assert data["skillsDetected"] == 0
         assert data["lowConfidence"] is True
-        assert "We couldn't recognize specific requirements in this job description" in data["message"]
+        assert data["scoreBreakdown"]["skillsMatch"] is None
+        assert data["scoreBreakdown"]["seniorityMatch"] is None
+        assert data["scoreBreakdown"]["domainMatch"] is None
         # Exits early at Phase 1, zero LLM calls made
         assert llm_tracker.call_count == 0
+
+@pytest.mark.asyncio
+async def test_analyze_endpoint_unconfirmed_seniority_skips_llm(llm_tracker):
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        # Candidate has skills but no stated years (date ranges only, unconfirmed)
+        request_data = {
+            "resume": "Software engineer building services in Python, SQL, and Docker. Experience: 2018 - 2023 Acme Corp.",
+            "jdText": "Looking for a Software engineer with 4 years experience in Python, SQL, and Docker."
+        }
+        response = await client.post("/api/v1/analyze", json=request_data)
+        assert response.status_code == 200
+        data = response.json()
+        assert data["seniorityAssessed"] is False
+        assert data["seniorityStatus"] == "unconfirmed"
+        assert data["scoreBreakdown"]["seniorityMatch"] is None
+        assert data["scoreBreakdown"]["skillsMatch"] == 100
+        # When seniority is unconfirmed, overall score renormalizes to skills-only (100)
+        assert data["overallScore"] == 100
+        # seniority_alignment LLM call is skipped! Exactly 3 calls: 1 candidate extraction fallback + 2 Phase 3 calls (executive_summary, ats_optimization)
+        assert llm_tracker.call_count == 3
+        assert not any("alignment_summary" in call["schema"] for call in llm_tracker.calls)
 
 @pytest.mark.asyncio
 async def test_analyze_validation_error(llm_tracker):

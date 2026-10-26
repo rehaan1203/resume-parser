@@ -36,7 +36,6 @@ from app.prompts.seniority_prompt import (
 from app.prompts.extraction_prompt import (
     build_candidate_experience_prompt,
     build_jd_experience_prompt,
-    build_experience_extraction_prompt,
     EXPERIENCE_EXTRACTION_PROMPT_VERSION
 )
 from app.prompts.career_prompt import (
@@ -83,7 +82,6 @@ __all__ = [
     # Extraction
     "build_candidate_experience_prompt",
     "build_jd_experience_prompt",
-    "build_experience_extraction_prompt",
     "EXPERIENCE_EXTRACTION_PROMPT_VERSION",
     # Career
     "INTERVIEW_QUESTIONS_PROMPT",

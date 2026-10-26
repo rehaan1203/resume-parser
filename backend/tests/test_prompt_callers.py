@@ -11,7 +11,6 @@ from unittest.mock import AsyncMock, patch
 from app.ai.explainer import Phase3Explainer
 from app.api.routes.transition import generate_transition_roadmap, generate_transition_tips
 from app.utils.experience_extractor import (
-    extract_years_experience,
     extract_candidate_experience_with_llm,
     extract_required_experience_with_llm,
 )
@@ -223,7 +222,7 @@ async def test_caller_experience_extraction():
 
         await extract_candidate_experience_with_llm(sample_text)
 
-    assert captured_prompt == read_fixture("experience_extraction.txt")
+    assert captured_prompt == read_fixture("candidate_experience_extraction.txt")
 
 
 @pytest.mark.asyncio

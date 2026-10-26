@@ -51,6 +51,12 @@ class RoadmapItem(BaseModel):
     resources: List[str] = Field(default_factory=list)
     completed: bool = False
 
+class ScoreBreakdown(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+    skills_match: Optional[int] = Field(None, alias="skillsMatch")
+    seniority_match: Optional[int] = Field(None, alias="seniorityMatch")
+    domain_match: Optional[int] = Field(None, alias="domainMatch")
+
 class AnalysisResponse(BaseModel):
     model_config = ConfigDict(
         populate_by_name=True,
@@ -75,11 +81,14 @@ class AnalysisResponse(BaseModel):
     
     # New fields for 4-Phase deterministic pipeline
     executive_summary: Optional[str] = Field(None, alias="executiveSummary")
-    score_breakdown: Optional[Dict[str, int]] = Field(None, alias="scoreBreakdown")
+    score_breakdown: Optional[ScoreBreakdown] = Field(None, alias="scoreBreakdown")
     ats_optimization: Optional[Dict[str, Any]] = Field(None, alias="atsOptimization")
     domain_analysis: Optional[Dict[str, Any]] = Field(None, alias="domainAnalysis")
     skill_analysis: Optional[Dict[str, Any]] = Field(None, alias="skillAnalysis")
     seniority_analysis: Optional[Dict[str, Any]] = Field(None, alias="seniorityAnalysis")
+    seniority_assessed: Optional[bool] = Field(None, alias="seniorityAssessed")
+    seniority_reason: Optional[str] = Field(None, alias="seniorityReason")
+    seniority_status: Optional[str] = Field(None, alias="seniorityStatus")
     cross_validation_status: Optional[Dict[str, Any]] = Field(None, alias="crossValidationStatus")
     perfect_match: Optional[bool] = Field(None, alias="perfectMatch")
     

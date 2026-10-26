@@ -35,7 +35,7 @@ def generate_friction_and_strengths(
             })
     
     # 1. Experience Friction
-    if seniority_gap > 0:
+    if seniority_gap is not None and seniority_gap > 0:
         friction_points.append({
             "category": "experience",
             "severity": "high" if seniority_gap >= 3 else "warning",

@@ -5,7 +5,7 @@ Friction Matcher is an advanced AI-augmented web application designed to analyze
 ## 🚀 Features
 
 - **Deterministic Parsing:** Extracts exact years of experience, domain detection, and skill matching using structured logic before falling back to AI.
-- **Comprehensive Match Scoring:** Evaluates candidates based on technical skills, soft skills, and seniority alignment.
+- **Comprehensive Match Scoring:** Evaluates candidates based on technical skills, soft skills, and seniority alignment. Overall score uses configurable weighting via `SKILLS_WEIGHT` (default `0.6`) and `SENIORITY_WEIGHT` (default `0.4`). When seniority is unconfirmed or not specified in the JD, weights renormalize to skills only.
 - **AI-Powered Insights:** Uses Google Gemini (or Mistral) to generate executive summaries, ATS optimization tips, and personalized learning roadmaps.
 - **Verified Resources:** An internal `LinkProcessor` validates AI-generated links to ensure candidates only receive functional YouTube and external resources.
 - **Domain Guardrails:** Detects if a candidate is applying outside their industry and generates specialized "Career Change" roadmaps instantly.

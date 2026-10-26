@@ -46,13 +46,3 @@ Return ONLY a JSON object matching this schema:
 Text:
 {text[:max_chars]}"""
 
-def build_experience_extraction_prompt(text: str) -> str:
-    """Legacy extraction prompt preserved for backward compatibility until fixture update."""
-    return f"""
-        Extract the total years of professional experience from this text.
-        Return ONLY a JSON object with a single key 'years' mapping to an integer.
-        If no experience is mentioned, return 0.
-        
-        Text:
-        {text[:3000]}
-        """

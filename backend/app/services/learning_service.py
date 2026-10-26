@@ -19,6 +19,11 @@ class LearningService:
         if not user_feedback:
             return {"processed": False, "reason": "No feedback provided"}
 
+        status = analysis_result.get("status")
+        if status in ("unparseable_jd", "domain_mismatch"):
+            logger.info(f"Excluding analysis result with status '{status}' from learning logs")
+            return {"processed": False, "reason": f"Excluded status: {status}"}
+
         # Extract context from analysis result
         context = {
             "resume_domain": analysis_result.get("resume_domain"),

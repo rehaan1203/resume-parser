@@ -1,17 +1,20 @@
 """Hermetic tests for experience extraction hotfix preventing calendar years and false positives."""
 import pytest
 from unittest.mock import AsyncMock, patch
-from app.utils.experience_extractor import extract_years_experience
+from app.utils.experience_extractor import (
+    extract_candidate_experience,
+    extract_candidate_experience_with_llm,
+)
 from app.ai.orchestrator import DeterministicOrchestrator
 
 @pytest.fixture(autouse=True)
 def mock_external_calls(monkeypatch):
-    """Ensure LLM fallback returns 0 if reached during these tests."""
+    """Ensure LLM fallback returns not_found if reached during these tests."""
     from app.config import settings
     monkeypatch.setattr(settings, "cache_enabled", False)
     monkeypatch.setattr(
         "app.ai.client.GenAIClient.generate_structured_content",
-        AsyncMock(return_value={"years": 0})
+        AsyncMock(return_value={"status": "not_found", "years": None, "evidence_quote": None})
     )
     monkeypatch.setattr(
         "app.ai.client.GenAIClient.generate_content",
@@ -27,36 +30,37 @@ def mock_external_calls(monkeypatch):
 @pytest.mark.asyncio
 async def test_experience_header_with_calendar_year_not_extracted():
     """EXPERIENCE followed by a calendar year must not be parsed as 2019 years."""
-    result = await extract_years_experience("EXPERIENCE\n2019 - Present Acme Corp")
-    assert result != 2019
-    assert result == 0  # LLM fallback returns 0 when regex finds nothing
+    result = extract_candidate_experience("EXPERIENCE\n2019 - Present Acme Corp")
+    assert result.years != 2019
+    assert result.status == "not_found"
 
 @pytest.mark.asyncio
 async def test_experience_colon_date_range_not_extracted():
     """Experience: 2018 - 2023 must not be parsed as 2018 years."""
-    result = await extract_years_experience("Experience: 2018 - 2023")
-    assert result != 2018
-    assert result == 0
+    result = extract_candidate_experience("Experience: 2018 - 2023")
+    assert result.years != 2018
+    assert result.status == "not_found"
 
 @pytest.mark.asyncio
 async def test_graduated_years_ago_not_extracted():
     """Graduated 5 years ago must not be parsed as 5 years of experience."""
-    result = await extract_years_experience("graduated 5 years ago")
-    assert result != 5
-    assert result == 0
+    result = extract_candidate_experience("graduated 5 years ago")
+    assert result.years != 5
+    assert result.status == "not_found"
 
 @pytest.mark.asyncio
 async def test_years_old_not_extracted():
     """5 years old must not be parsed as 5 years of experience."""
-    result = await extract_years_experience("5 years old")
-    assert result != 5
-    assert result == 0
+    result = extract_candidate_experience("5 years old")
+    assert result.years != 5
+    assert result.status == "not_found"
 
 @pytest.mark.asyncio
 async def test_valid_experience_control():
     """6 years of experience must be parsed as 6 years."""
-    result = await extract_years_experience("Software Engineer with 6 years of experience in Python.")
-    assert result == 6
+    result = extract_candidate_experience("Software Engineer with 6 years of experience in Python.")
+    assert result.years == 6
+    assert result.status == "found"
 
 @pytest.mark.asyncio
 async def test_orchestrator_seniority_not_inflated_by_calendar_year():
