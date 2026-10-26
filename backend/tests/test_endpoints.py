@@ -144,6 +144,10 @@ async def test_analyze_endpoint_unparseable_jd(llm_tracker):
         assert data["scoreBreakdown"]["skillsMatch"] is None
         assert data["scoreBreakdown"]["seniorityMatch"] is None
         assert data["scoreBreakdown"]["domainMatch"] is None
+        assert data.get("seniorityAnalysis") is None
+        assert data.get("seniorityAssessed") is None
+        assert data.get("seniorityReason") is None
+        assert data.get("seniorityStatus") is None
         # Exits early at Phase 1, zero LLM calls made
         assert llm_tracker.call_count == 0
 

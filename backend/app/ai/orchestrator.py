@@ -43,22 +43,51 @@ class DeterministicOrchestrator:
         jd_text = request_data.get("jd_text", "") or request_data.get("job_description", "")
         
         # --- PHASE 1: Deterministic Parser ---
-        await report(10, "Detecting professional domain and extracting experience...")
-        cand_exp_task = extract_candidate_experience_with_llm(resume_text)
-        jd_exp_task = extract_required_experience_with_llm(jd_text)
-        candidate_exp, jd_exp = await asyncio.gather(cand_exp_task, jd_exp_task)
-        seniority_analysis = calculate_seniority_score_and_gap(candidate_exp, jd_exp)
-        candidate_years = seniority_analysis.get("years_experience") or 0
-        required_years = seniority_analysis.get("required_years") or 0
-            
+        await report(10, "Extracting and comparing skills...")
+        resume_skills = extract_skills(resume_text)
+        jd_skills = extract_skills(jd_text)
+        skills_detected = len(jd_skills)
+
         domain_analysis = analyze_domain(resume_text, jd_text)
         resume_domain = domain_analysis.get("resume_domain", "unknown")
         jd_domain = domain_analysis.get("jd_domain", "unknown")
         is_mismatch = (resume_domain != "unknown" and jd_domain != "unknown" and resume_domain != jd_domain)
         is_unknown = (resume_domain == "unknown" or jd_domain == "unknown")
-        
         domain_analysis["is_mismatch"] = is_mismatch
         domain_analysis["is_unknown"] = is_unknown
+
+        if not jd_skills:
+            await report(100, "No skills detected in Job Description.")
+            return {
+                "id": f"ai-{uuid.uuid4().hex[:8]}",
+                "status": "unparseable_jd",
+                "overall_score": None,
+                "score_breakdown": {
+                    "skills_match": None,
+                    "seniority_match": None,
+                    "domain_match": None
+                },
+                "domain_analysis": domain_analysis,
+                "skill_analysis": {
+                    "matching_skills": [],
+                    "missing_skills": [],
+                    "skills_score": 0,
+                    "skills_detected": 0,
+                    "low_confidence": True
+                },
+                "seniority_analysis": None,
+                "seniority_assessed": None,
+                "seniority_reason": None,
+                "seniority_status": None,
+                "skills_detected": 0,
+                "low_confidence": True,
+                "message": "We couldn't recognize specific requirements in this job description. This version works best with skill-based postings and has limited coverage for some fields, such as healthcare, law and trades, so your posting may be fine.",
+                "friction_points": [],
+                "strengths": [],
+                "skill_gaps": [],
+                "roadmap": None,
+                "ats_optimization": None
+            }
 
         if is_mismatch:
             DOMAIN_DISPLAY_NAMES = {
@@ -92,44 +121,14 @@ class DeterministicOrchestrator:
                 "transition_available": True,
                 "full_analysis": None
             }
-        
-        await report(15, "Extracting and comparing skills...")
-        resume_skills = extract_skills(resume_text)
-        jd_skills = extract_skills(jd_text)
-        skills_detected = len(jd_skills)
 
-        if not jd_skills:
-            await report(100, "No skills detected in Job Description.")
-            return {
-                "id": f"ai-{uuid.uuid4().hex[:8]}",
-                "status": "unparseable_jd",
-                "overall_score": None,
-                "score_breakdown": {
-                    "skills_match": None,
-                    "seniority_match": None,
-                    "domain_match": None
-                },
-                "domain_analysis": domain_analysis,
-                "skill_analysis": {
-                    "matching_skills": [],
-                    "missing_skills": [],
-                    "skills_score": 0,
-                    "skills_detected": 0,
-                    "low_confidence": True
-                },
-                "seniority_analysis": seniority_analysis,
-                "seniority_assessed": seniority_analysis.get("seniority_assessed", False),
-                "seniority_reason": seniority_analysis.get("seniority_reason"),
-                "seniority_status": seniority_analysis.get("seniority_status"),
-                "skills_detected": 0,
-                "low_confidence": True,
-                "message": "We couldn't recognize specific requirements in this job description. This version works best with skill-based postings and has limited coverage for some fields, such as healthcare, law and trades, so your posting may be fine.",
-                "friction_points": [],
-                "strengths": [],
-                "skill_gaps": [],
-                "roadmap": None,
-                "ats_optimization": None
-            }
+        await report(15, "Detecting professional domain and extracting experience...")
+        cand_exp_task = extract_candidate_experience_with_llm(resume_text)
+        jd_exp_task = extract_required_experience_with_llm(jd_text)
+        candidate_exp, jd_exp = await asyncio.gather(cand_exp_task, jd_exp_task)
+        seniority_analysis = calculate_seniority_score_and_gap(candidate_exp, jd_exp)
+        candidate_years = seniority_analysis.get("years_experience") or 0
+        required_years = seniority_analysis.get("required_years") or 0
 
         matching_skills, missing_skills = compare_skills(resume_skills, jd_skills)
         low_confidence = skills_detected < settings.low_evidence_threshold
