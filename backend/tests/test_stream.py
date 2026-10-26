@@ -1,7 +1,10 @@
 import httpx
 import json
 import asyncio
+import pytest
 
+@pytest.mark.asyncio
+@pytest.mark.live
 async def test_stream():
     url = "http://127.0.0.1:8000/api/v1/analyze/stream"
     payload = {

@@ -1,6 +1,9 @@
 import asyncio
 import httpx
+import pytest
 
+@pytest.mark.asyncio
+@pytest.mark.live
 async def test_links():
     urls = [
         "https://www.youtube.com/watch?v=abc123def45", # fake video
