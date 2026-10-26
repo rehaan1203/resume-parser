@@ -79,6 +79,23 @@ The project is strictly separated into a client and server model to ensure scala
 
 The application includes built-in rate limiting to prevent API abuse and excessive LLM costs. By default, it allows 10 requests per minute and 100 requests per day per IP address.
 
+## 🧪 Running Tests
+
+All backend unit and integration tests are hermetic by default (external sockets, LLM APIs, and Redis are blocked or stubbed).
+
+```bash
+cd backend
+
+# Run the full hermetic test suite (default):
+pytest
+
+# Run tests including live integration checks (requires network and running services):
+pytest -m "live"
+
+# Run a specific test file:
+pytest tests/test_seniority_matrix.py
+```
+
 ## 🤝 Contributing
 
 When contributing to this repository, please ensure that any new LLM prompts follow the strict JSON schema enforced by Pydantic models in the backend to prevent frontend rendering errors.
