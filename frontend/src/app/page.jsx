@@ -102,7 +102,7 @@ export default function Home() {
                             {results.status === 'domain_mismatch' ? (
                                 <DomainMismatchCard result={results} />
                             ) : results.status === 'unparseable_jd' ? (
-                                <UnparseableJdCard message={results.message} onEditJd={handleEditJobDescription} />
+                                <UnparseableJdCard onEditJd={handleEditJobDescription} />
                             ) : (
                                 <>
                                     {(results.lowConfidence || results.low_confidence) && (

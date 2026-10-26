@@ -1,10 +1,10 @@
 'use client';
 import React from 'react';
 import { motion } from 'framer-motion';
-import { AlertCircle, Edit3, ArrowUp, HelpCircle, FileSearch } from 'lucide-react';
+import { AlertCircle, Edit3, HelpCircle, FileSearch } from 'lucide-react';
 import { Button } from '../shared/Button';
 
-export function UnparseableJdCard({ onEditJd, message }) {
+export function UnparseableJdCard({ onEditJd }) {
     return (
         <motion.div
             initial={{ opacity: 0, y: 20 }}
