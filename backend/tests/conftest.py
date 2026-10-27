@@ -9,12 +9,16 @@ def pytest_configure(config):
     config.addinivalue_line("markers", "live: tests that require real external network, APIs, or services")
 
 # Default settings overrides for testing (hermetic environment without .env)
-os.environ.setdefault("CACHE_ENABLED", "false")
-os.environ.setdefault("PORT", "8000")
-os.environ.setdefault("CORS_ORIGINS", '["*"]')
-os.environ.setdefault("MISTRAL_API_KEY", "mock-mistral-test-key")
-os.environ.setdefault("TAVILY_API_KEY", "mock-tavily-test-key")
-os.environ.setdefault("YOUTUBE_API_KEY", "mock-youtube-test-key")
+for key, val in [
+    ("CACHE_ENABLED", "false"),
+    ("PORT", "8000"),
+    ("CORS_ORIGINS", '["*"]'),
+    ("MISTRAL_API_KEY", "mock-mistral-test-key"),
+    ("TAVILY_API_KEY", "mock-tavily-test-key"),
+    ("YOUTUBE_API_KEY", "mock-youtube-test-key"),
+]:
+    if not os.environ.get(key):
+        os.environ[key] = val
 
 class GlobalLLMCallTracker:
     def __init__(self):
