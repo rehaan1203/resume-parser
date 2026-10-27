@@ -9,6 +9,7 @@ class InterviewQuestionGenerator:
     
     def __init__(self, client: GenAIClient):
         self.client = client
+        self.is_fallback = False
     
     async def generate_questions(
         self,
@@ -20,6 +21,7 @@ class InterviewQuestionGenerator:
     ) -> List[Dict[str, Any]]:
         """Generate interview questions."""
         try:
+            self.is_fallback = False
             prompt = INTERVIEW_QUESTIONS_PROMPT.format(
                 resume=resume[:2000],
                 jd=jd[:2000],
@@ -47,6 +49,7 @@ class InterviewQuestionGenerator:
             
         except Exception as e:
             logger.error(f"Interview question generation failed: {e}")
+            self.is_fallback = True
             return self._get_default_questions(skill_gaps)
     
     def _get_default_questions(self, skill_gaps: List[str]) -> List[Dict[str, Any]]:
