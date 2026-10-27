@@ -138,10 +138,26 @@ export default function Home() {
                                         </div>
 
                                         <div className="lg:col-span-8 space-y-8">
-                                            <ExecutiveSummary summary={results.executiveSummary || results.executive_summary} />
-                                            <FrictionVisualization points={results.frictionPoints || results.friction_points} />
-                                            <ATSOptimizationTips tips={results.atsOptimization || results.atsOptimizationTips || results.ats_optimization} />
-                                            <SeniorityAlignment alignment={results.seniorityAnalysis || results.seniorityAlignment || results.seniority_analysis} />
+                                            {(() => {
+                                                const degradedList = results.degradedSections || results.degraded_sections || [];
+                                                return (
+                                                    <>
+                                                        <ExecutiveSummary 
+                                                            summary={results.executiveSummary || results.executive_summary} 
+                                                            isDegraded={degradedList.includes('executive_summary')}
+                                                        />
+                                                        <FrictionVisualization points={results.frictionPoints || results.friction_points} />
+                                                        <ATSOptimizationTips 
+                                                            tips={results.atsOptimization || results.atsOptimizationTips || results.ats_optimization} 
+                                                            isDegraded={degradedList.includes('ats_optimization')}
+                                                        />
+                                                        <SeniorityAlignment 
+                                                            alignment={results.seniorityAnalysis || results.seniorityAlignment || results.seniority_analysis} 
+                                                            isDegraded={degradedList.includes('seniority_alignment')}
+                                                        />
+                                                    </>
+                                                );
+                                            })()}
                                         </div>
                                     </div>
                                     
