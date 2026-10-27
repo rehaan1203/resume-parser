@@ -14,11 +14,11 @@ class Settings(BaseSettings):
     
     # Server
     host: str = "0.0.0.0"
-    port: int
+    port: int = 8000
     workers: int = 1
     
     # CORS
-    cors_origins: List[str]
+    cors_origins: List[str] = ["http://localhost:3000"]
     
     # API
     api_prefix: str = "/api/v1"

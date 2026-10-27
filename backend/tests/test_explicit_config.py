@@ -16,6 +16,19 @@ def test_default_mistral_endpoint_and_model():
     assert s.mistral_endpoint == "https://api.mistral.ai"
     assert s.ai_model == "mistral-small-latest"
 
+def test_safe_defaults_for_port_and_cors_origins():
+    """Settings can initialize with safe defaults for port and cors_origins when not in environment."""
+    import os
+    from unittest.mock import patch
+    with patch.dict(os.environ, {}, clear=True):
+        s = Settings(
+            _env_file=None,
+            mistral_api_key="mock-key",
+            tools_enabled=False
+        )
+        assert s.port == 8000
+        assert s.cors_origins == ["http://localhost:3000"]
+
 def test_gemini_model_raises_startup_error():
     """Specifying a gemini model raises a ValueError on startup."""
     with pytest.raises(ValueError, match="gemini AI_MODEL"):
