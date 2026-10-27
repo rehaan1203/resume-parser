@@ -32,8 +32,14 @@ class GenAIClient:
         # MISTRAL CONFIGURATION
         if not settings.mistral_api_key:
             raise ValueError("MISTRAL_API_KEY not set")
-        endpoint = "https://codestral.mistral.ai" if settings.mistral_api_key.startswith("mstrl_") else "https://api.mistral.ai"
-        self.client = MistralAsyncClient(api_key=settings.mistral_api_key, endpoint=endpoint)
+        endpoint_val = getattr(settings, "mistral_endpoint", "https://api.mistral.ai")
+        self.endpoint = endpoint_val if isinstance(endpoint_val, str) else "https://api.mistral.ai"
+        if settings.mistral_api_key and str(settings.mistral_api_key).startswith("mstrl_") and "codestral" not in self.endpoint:
+            logger.warning(
+                f"mstrl_ key detected with non-codestral endpoint ({self.endpoint}). "
+                "Codestral keys typically only authenticate against https://codestral.mistral.ai."
+            )
+        self.client = MistralAsyncClient(api_key=settings.mistral_api_key, endpoint=self.endpoint)
 
         self.max_retries = settings.ai_max_retries
         self.timeout = settings.ai_timeout_seconds
@@ -47,45 +53,28 @@ class GenAIClient:
     async def generate_content(
         self,
         prompt: str,
-        model: str = "mistral-small-latest", # <-- Changed default to mistral
-        temperature: float = 0.1,  # <-- LOWERED: was 0.7, now 0.1 for consistency
+        model: Optional[str] = None,
+        temperature: float = 0.1,
         max_output_tokens: int = 8192
     ) -> str:
         """Generate content using AI model with low temperature."""
+        from urllib.parse import urlparse
+        resolved_model = model or settings.ai_model or "mistral-small-latest"
+        host = urlparse(self.endpoint).hostname or self.endpoint
         try:
-            logger.info(f"Generating content with {model} (temperature: {temperature})")
+            logger.info(f"Calling endpoint {host} with model {resolved_model} (temperature: {temperature})")
             start_time = time.time()
 
-            # GEMINI IMPLEMENTATION (Commented out for future use)
-            # response = await asyncio.to_thread(
-            #     self.client.models.generate_content,
-            #     model=model,
-            #     contents=prompt,
-            #     config=types.GenerateContentConfig(
-            #         temperature=temperature,
-            #         max_output_tokens=max_output_tokens,
-            #     )
-            # )
-            # if response.text:
-            #     return response.text
-            # else:
-            #     raise ValueError("No content returned from API")
-
-            # MISTRAL / CODESTRAL IMPLEMENTATION
-            if settings.mistral_api_key and settings.mistral_api_key.startswith("mstrl_"):
-                model = "codestral-latest"
-            elif "gemini" in model:
-                model = settings.ai_model or "mistral-small-latest"
-                
             response = await self.client.chat(
-                model=model,
+                model=resolved_model,
                 messages=[ChatMessage(role="user", content=prompt)],
                 temperature=temperature,
                 max_tokens=max_output_tokens
             )
 
             elapsed = (time.time() - start_time) * 1000
-            logger.info(f"Content generated in {elapsed:.0f}ms")
+            resp_model = getattr(response, "model", resolved_model)
+            logger.info(f"Response received from model {resp_model} in {elapsed:.0f}ms")
 
             if hasattr(response, "usage") and response.usage:
                 completion_tokens = getattr(response.usage, "completion_tokens", 0)
@@ -118,8 +107,8 @@ class GenAIClient:
         self,
         prompt: str,
         output_schema: Dict[str, Any],
-        model: str = "mistral-small-latest", # <-- Changed default to mistral
-        temperature: float = 0.1  # <-- LOWERED: was 0.3, now 0.1
+        model: Optional[str] = None,
+        temperature: float = 0.1
     ) -> Dict[str, Any]:
         """Generate structured JSON response with low temperature."""
         import json

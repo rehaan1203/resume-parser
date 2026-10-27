@@ -26,9 +26,10 @@ class Settings(BaseSettings):
     # AI Service
     google_api_key: Optional[str] = None
     mistral_api_key: Optional[str] = None
+    mistral_endpoint: str = "https://api.mistral.ai"
     huggingfacehub_api_token: Optional[str] = None
     hf_hub_offline: str = "0"
-    ai_model: Optional[str] = None
+    ai_model: str = "mistral-small-latest"
     gemini_model: str = "gemini-2.5-flash"
     embedding_model: str = "gemini-embedding-2"
     use_ai_service: bool = True
@@ -186,6 +187,11 @@ class Settings(BaseSettings):
     @model_validator(mode='after')
     def validate_api_key(self):
         """Require API key if AI service is enabled."""
+        if self.ai_model and "gemini" in self.ai_model.lower():
+            raise ValueError(
+                f"gemini AI_MODEL ('{self.ai_model}') is not supported on Mistral client. "
+                "Please configure AI_MODEL='mistral-small-latest' or 'codestral-latest'."
+            )
         if self.use_ai_service and not (self.google_api_key or self.mistral_api_key):
             raise ValueError("Either GOOGLE_API_KEY or MISTRAL_API_KEY required when USE_AI_SERVICE=true")
         if self.tools_enabled and not self.tavily_api_key:
