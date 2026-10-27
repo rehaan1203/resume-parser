@@ -35,23 +35,23 @@ async def generate_transition_plan(request: TransitionRequest):
         degraded = []
         
         # Generate transition roadmap
-        roadmap, is_roadmap_fallback = await generate_transition_roadmap(
+        roadmap = await generate_transition_roadmap(
             resume_domain=request.resume_domain,
             jd_domain=request.jd_domain,
             resume=request.resume,
             jd=request.jd
         )
-        if is_roadmap_fallback:
+        if roadmap.get("is_fallback"):
             degraded.append("transition_roadmap")
         
         # Generate transition tips (education, certifications, portfolio)
-        transition_tips, is_tips_fallback = await generate_transition_tips(
+        transition_tips = await generate_transition_tips(
             resume_domain=request.resume_domain,
             jd_domain=request.jd_domain,
             resume=request.resume,
             jd=request.jd
         )
-        if is_tips_fallback:
+        if transition_tips.get("is_fallback"):
             degraded.append("transition_tips")
         
         return TransitionResponse(
@@ -108,7 +108,7 @@ async def generate_transition_roadmap(resume_domain: str, jd_domain: str, resume
             },
             temperature=0.3
         )
-        return response, False
+        return response
     except Exception as e:
         logger.error(f"Failed to generate transition roadmap: {e}")
         return {
@@ -125,11 +125,12 @@ async def generate_transition_roadmap(resume_domain: str, jd_domain: str, resume
                         f"Inventory transferable skills from your background in {resume_domain.replace('_', ' ').title()}"
                     ]
                 }
-            ]
-        }, True
+            ],
+            "is_fallback": True
+        }
 
 
-async def generate_transition_tips(resume_domain: str, jd_domain: str, resume: str, jd: str):
+async def generate_transition_tips(resume_domain: str, jd_domain: str, resume: str, jd: str) -> dict:
     """
     Generate transition tips (education, certifications, portfolio) using LLM.
     NO ATS optimization tips (keywords, phrasing, formatting).
@@ -154,7 +155,7 @@ async def generate_transition_tips(resume_domain: str, jd_domain: str, resume: s
             },
             temperature=0.3
         )
-        return response, False
+        return response
     except Exception as e:
         logger.error(f"Failed to generate transition tips: {e}")
         return {
@@ -164,5 +165,6 @@ async def generate_transition_tips(resume_domain: str, jd_domain: str, resume: s
             "resume_strategy": [
                 f"Highlight transferable competencies from {resume_domain.replace('_', ' ').title()}",
                 f"Frame previous responsibilities around methodologies relevant to {jd_domain.replace('_', ' ').title()}"
-            ]
-        }, True
+            ],
+            "is_fallback": True
+        }
