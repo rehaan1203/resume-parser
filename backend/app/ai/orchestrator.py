@@ -273,7 +273,8 @@ class DeterministicOrchestrator:
             "strengths": friction_data["strengths"],
             "skill_gaps": friction_data["skill_gaps"],
             "ats_optimization": ats_optimization,
-            "roadmap": roadmap
+            "roadmap": roadmap,
+            "degraded_sections": getattr(explainer, "degraded_sections", [])
         }
         
         # --- PHASE 4: Cross-Validation ---

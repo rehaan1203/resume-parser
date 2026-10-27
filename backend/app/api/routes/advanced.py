@@ -48,6 +48,7 @@ async def generate_interview_questions(
         return {
             "questions": questions,
             "total": len(questions),
+            "degraded_sections": ["interview_questions"] if generator.is_fallback else [],
             "metadata": {
                 "generated_by": settings.gemini_model,
                 "skill_gaps_used": skill_gaps
@@ -86,6 +87,7 @@ async def optimize_for_ats(
         
         return {
             "suggestions": suggestions,
+            "degraded_sections": ["ats_optimization"] if optimizer.is_fallback else [],
             "metadata": {
                 "generated_by": settings.gemini_model,
                 "friction_points_analyzed": len(friction_points)
@@ -125,6 +127,7 @@ async def get_career_advice(
         
         return {
             "advice": advice,
+            "degraded_sections": ["career_advice"] if advisor.is_fallback else [],
             "metadata": {
                 "generated_by": settings.gemini_model,
                 "skill_gaps_used": skill_gaps

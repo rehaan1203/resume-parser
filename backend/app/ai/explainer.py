@@ -11,6 +11,7 @@ from app.prompts.seniority_prompt import build_seniority_alignment_prompt
 class Phase3Explainer:
     def __init__(self):
         self.client = GenAIClient()
+        self.degraded_sections: List[str] = []
         
     async def generate_executive_summary(self, score: int, strengths: List[str], gaps: List[str], seniority_gap: int) -> str:
         prompt = build_executive_summary_prompt(
@@ -28,6 +29,8 @@ class Phase3Explainer:
             return response.get("summary", "Summary could not be generated.")
         except Exception as e:
             logger.error(f"Failed to generate executive summary: {e}")
+            if "executive_summary" not in self.degraded_sections:
+                self.degraded_sections.append("executive_summary")
             return f"Candidate achieved a {score}% match. Key strengths include {', '.join(strengths[:3])}. Focus on developing {', '.join(gaps[:3])}."
 
     async def generate_mismatch_message(self, resume_domain: str, jd_domain: str) -> str:
@@ -43,6 +46,8 @@ class Phase3Explainer:
             return response.get("message", f"Your experience is in {resume_domain}, but this role requires {jd_domain}.")
         except Exception as e:
             logger.error(f"Failed to generate mismatch message: {e}")
+            if "mismatch_message" not in self.degraded_sections:
+                self.degraded_sections.append("mismatch_message")
             return f"Your experience is in {resume_domain}, but this role requires {jd_domain}."
 
     async def generate_ats_optimization(self, gaps: List[str], jd_text: str, domain_analysis: Dict[str, Any] = None) -> Dict[str, Any]:
@@ -69,6 +74,8 @@ class Phase3Explainer:
             )
         except Exception as e:
             logger.error(f"Failed to generate ATS optimization: {e}")
+            if "ats_optimization" not in self.degraded_sections:
+                self.degraded_sections.append("ats_optimization")
             return {
                 "keywords": [f"Add '{gap}' to Core Competencies" for gap in gaps[:3]],
                 "phrasing": [],
@@ -104,6 +111,8 @@ class Phase3Explainer:
             )
         except Exception as e:
             logger.error(f"Failed to generate roadmap: {e}")
+            if "roadmap" not in self.degraded_sections:
+                self.degraded_sections.append("roadmap")
             return {
                 "type": gap_type,
                 "title": f"Fallback Roadmap ({weeks_count} Weeks)",
@@ -187,6 +196,8 @@ class Phase3Explainer:
             }
         except Exception as e:
             logger.error(f"Failed to generate seniority alignment: {e}")
+            if "seniority_alignment" not in self.degraded_sections:
+                self.degraded_sections.append("seniority_alignment")
             return {
                 "your_level": your_level,
                 "your_years": years_experience,

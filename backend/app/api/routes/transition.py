@@ -22,6 +22,7 @@ class TransitionResponse(BaseModel):
     roadmap: dict
     transition_tips: dict
     seniority: dict
+    degraded_sections: List[str] = Field(default_factory=list, alias="degradedSections")
 
 @router.post("/transition-plan", response_model=TransitionResponse)
 async def generate_transition_plan(request: TransitionRequest):
@@ -31,22 +32,27 @@ async def generate_transition_plan(request: TransitionRequest):
     """
     try:
         logger.info(f"📋 Generating transition plan: {request.resume_domain} → {request.jd_domain}")
+        degraded = []
         
         # Generate transition roadmap
-        roadmap = await generate_transition_roadmap(
+        roadmap, is_roadmap_fallback = await generate_transition_roadmap(
             resume_domain=request.resume_domain,
             jd_domain=request.jd_domain,
             resume=request.resume,
             jd=request.jd
         )
+        if is_roadmap_fallback:
+            degraded.append("transition_roadmap")
         
         # Generate transition tips (education, certifications, portfolio)
-        transition_tips = await generate_transition_tips(
+        transition_tips, is_tips_fallback = await generate_transition_tips(
             resume_domain=request.resume_domain,
             jd_domain=request.jd_domain,
             resume=request.resume,
             jd=request.jd
         )
+        if is_tips_fallback:
+            degraded.append("transition_tips")
         
         return TransitionResponse(
             status="transition_plan",
@@ -58,7 +64,8 @@ async def generate_transition_plan(request: TransitionRequest):
             seniority={
                 "status": "domain_mismatch",
                 "message": "Seniority comparison is not applicable for a career transition."
-            }
+            },
+            degraded_sections=degraded
         )
         
     except Exception as e:
@@ -101,7 +108,7 @@ async def generate_transition_roadmap(resume_domain: str, jd_domain: str, resume
             },
             temperature=0.3
         )
-        return response
+        return response, False
     except Exception as e:
         logger.error(f"Failed to generate transition roadmap: {e}")
         return {
@@ -119,10 +126,10 @@ async def generate_transition_roadmap(resume_domain: str, jd_domain: str, resume
                     ]
                 }
             ]
-        }
+        }, True
 
 
-async def generate_transition_tips(resume_domain: str, jd_domain: str, resume: str, jd: str) -> dict:
+async def generate_transition_tips(resume_domain: str, jd_domain: str, resume: str, jd: str):
     """
     Generate transition tips (education, certifications, portfolio) using LLM.
     NO ATS optimization tips (keywords, phrasing, formatting).
@@ -147,7 +154,7 @@ async def generate_transition_tips(resume_domain: str, jd_domain: str, resume: s
             },
             temperature=0.3
         )
-        return response
+        return response, False
     except Exception as e:
         logger.error(f"Failed to generate transition tips: {e}")
         return {
@@ -158,4 +165,4 @@ async def generate_transition_tips(resume_domain: str, jd_domain: str, resume: s
                 f"Highlight transferable competencies from {resume_domain.replace('_', ' ').title()}",
                 f"Frame previous responsibilities around methodologies relevant to {jd_domain.replace('_', ' ').title()}"
             ]
-        }
+        }, True

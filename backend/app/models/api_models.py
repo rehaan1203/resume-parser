@@ -91,6 +91,7 @@ class AnalysisResponse(BaseModel):
     seniority_status: Optional[str] = Field(None, alias="seniorityStatus")
     cross_validation_status: Optional[Dict[str, Any]] = Field(None, alias="crossValidationStatus")
     perfect_match: Optional[bool] = Field(None, alias="perfectMatch")
+    degraded_sections: List[str] = Field(default_factory=list, alias="degradedSections")
     
     # Legacy fields
     gap_strategies: Optional[List[dict]] = Field(None, alias="gapStrategies")

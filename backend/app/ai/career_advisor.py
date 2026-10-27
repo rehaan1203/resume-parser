@@ -9,6 +9,7 @@ class CareerAdvisor:
     
     def __init__(self, client: GenAIClient):
         self.client = client
+        self.is_fallback = False
     
     async def get_advice(
         self,
@@ -19,6 +20,7 @@ class CareerAdvisor:
     ) -> Dict[str, Any]:
         """Generate career advice."""
         try:
+            self.is_fallback = False
             prompt = CAREER_ADVICE_PROMPT.format(
                 resume=resume[:2000],
                 experience=experience[:500] if experience else "Not specified",
@@ -47,27 +49,29 @@ class CareerAdvisor:
             
         except Exception as e:
             logger.error(f"Career advice generation failed: {e}")
+            self.is_fallback = True
             return self._get_default_advice(skill_gaps)
     
     def _get_default_advice(self, skill_gaps: list) -> Dict[str, Any]:
         """Get default advice if AI fails."""
+        primary_skill = skill_gaps[0] if skill_gaps else "Identified Core Competencies"
         return {
             "short_term_goals": [
-                f"Learn {skill_gaps[0] if skill_gaps else 'Python'}",
-                "Build a portfolio project"
+                f"Master {primary_skill}",
+                "Build demonstrable work samples or case studies"
             ],
             "long_term_goals": [
-                "Achieve senior/lead role",
-                "Build industry network"
+                "Advance to senior practitioner or leadership role",
+                "Expand professional network and domain expertise"
             ],
             "skills_to_develop": [
-                {"skill": gap, "priority": "high", "resources": ["https://example.com"]}
+                {"skill": gap, "priority": "high", "resources": []}
                 for gap in skill_gaps[:3]
             ],
             "career_paths": [
-                {"title": "Senior Developer", "description": "Lead technical projects", "timeline": "2-3 years"},
-                {"title": "Team Lead", "description": "Manage and mentor team", "timeline": "3-5 years"}
+                {"title": "Senior Specialist", "description": "Lead complex domain initiatives and mentoring", "timeline": "2-3 years"},
+                {"title": "Practice / Team Lead", "description": "Manage cross-functional teams and operational delivery", "timeline": "3-5 years"}
             ],
-            "recommended_roles": ["Software Engineer", "Technical Lead"],
-            "salary_expectations": {"range": "$80k-$120k", "factors": ["Experience", "Location", "Skills"]}
+            "recommended_roles": ["Senior Associate", "Domain Specialist", "Practice Lead"],
+            "salary_expectations": {"range": "Competitive industry standard", "factors": ["Experience", "Location", "Specialized Skills"]}
         }

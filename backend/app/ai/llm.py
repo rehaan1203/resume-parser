@@ -52,12 +52,10 @@ class LLMService:
             logger.error(f"Friction analysis failed: {e}")
             # Return default structure
             return {
-                "skill_gaps": ["Python", "Docker", "Kubernetes"],
-                "phrasing_mismatches": [
-                    {"resume_phrase": "Managed teams", "jd_phrase": "Led projects", "suggestion": "Use action verbs"}
-                ],
-                "experience_analysis": {"gap": "3 years vs 5 years required", "suggestion": "Highlight transferable skills"},
-                "improvement_suggestions": ["Add Python projects", "Learn Docker basics"]
+                "skill_gaps": [],
+                "phrasing_mismatches": [],
+                "experience_analysis": {"gap": "Experience alignment needs review", "suggestion": "Highlight transferable achievements and metrics"},
+                "improvement_suggestions": ["Align resume terminology with job description keywords", "Provide measurable outcomes for recent accomplishments"]
             }
     
     async def generate_roadmap(
