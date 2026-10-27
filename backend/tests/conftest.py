@@ -31,7 +31,8 @@ class GlobalLLMCallTracker:
                 "status": "found",
                 "years": 4,
                 "evidence_quote": "4 years of experience",
-                "scope": "total_career"
+                "scope": "total_career",
+                "covers_entire_career": True
             }
         if "status" in output_schema and "years" in output_schema:
             return {

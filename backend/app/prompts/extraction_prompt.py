@@ -9,24 +9,30 @@ Extract ONLY what the text EXPLICITLY states about total professional experience
 
 Rules:
 - Do NOT compute or calculate from employment dates or graduation dates.
-- Do NOT count education degrees, internships, skill-specific durations, or 'ago' phrases.
-- Return status 'found' with the exact integer 'years', the exact 'evidence_quote' from the text, and classify the 'scope'.
-- Return status 'explicit_zero' with years 0, evidence_quote, and scope 'total_career' if the text unambiguously states no prior experience.
-- Return status 'not_found' with null years, null evidence_quote, and null scope if total professional experience is not explicitly stated.
+- Do NOT count education degrees, internships, student roles, skill/tool durations, single-project tenure, or 'ago' phrases.
+- Return status 'found' with the exact integer 'years', the exact 'evidence_quote' from the text, 'scope', and boolean 'covers_entire_career'.
+- Return status 'explicit_zero' with years 0, evidence_quote, scope 'total_career', and covers_entire_career true if the text unambiguously states no prior experience.
+- Return status 'not_found' with null years, null evidence_quote, null scope, and null covers_entire_career if total professional experience is not explicitly stated.
 
 Scope classification:
-- 'total_career': Overall or total career tenure across a profession or industry (e.g. '10 years of experience', '10+ years in nursing', 'a decade in medicine', '7 years in sales', '5 years as an engineer').
-- 'skill_or_tool': Experience with a specific software, tool, language, or single skill (e.g. '5 years of Python', '3 years of React').
-- 'education': Time spent in school, college, or university degree (e.g. '4 years in college', '3 years of study').
-- 'location_or_employer': Time living in a location or time at a single employer/company (e.g. '5 years in London', '4 years at Google').
-- 'other': Age ('30 years old'), elapsed time ('graduated 5 years ago'), or other non-career durations.
+- 'total_career': Overall or total career tenure across a profession or industry (e.g. '10 years of experience', '10+ years in nursing', 'a decade in medicine', '7 years in sales', '5 years as an engineer', '15 years in education').
+- 'skill_or_tool': Experience with a specific software, tool, language, or single skill (e.g. 'Excel for 6 years', 'React for 3 years', '5 years of Python'). covers_entire_career MUST be false.
+- 'role_or_project': Tenure on a specific project, matter, single role, or student/intern position (e.g. '5 years on litigation matters', '2 years as a student researcher', '1 year as an intern'). covers_entire_career MUST be false.
+- 'education': Time spent studying or in school/college/university degree (e.g. '4 years in college', '3 years of study'). covers_entire_career MUST be false.
+- 'location_or_employer': Time living in a location or time at a single employer/company (e.g. '5 years in London', '4 years at Google'). covers_entire_career MUST be false.
+- 'other': Age ('30 years old'), elapsed time ('graduated 5 years ago'), or other non-career durations. covers_entire_career MUST be false.
+
+covers_entire_career:
+- MUST be true ONLY if the years figure explicitly describes the candidate's ENTIRE professional career across all jobs.
+- MUST be false if the figure describes only a single tool, single employer, single project, single matter, student researcher role, internship, or educational program.
 
 Return ONLY a JSON object matching this schema:
 {{
   "status": "found" | "explicit_zero" | "not_found",
   "years": integer or null,
   "evidence_quote": string or null,
-  "scope": "total_career" | "skill_or_tool" | "education" | "location_or_employer" | "other" | null
+  "scope": "total_career" | "skill_or_tool" | "role_or_project" | "education" | "location_or_employer" | "other" | null,
+  "covers_entire_career": boolean or null
 }}
 
 Text:

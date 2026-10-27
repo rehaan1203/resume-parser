@@ -104,8 +104,12 @@ def verify_evidence_quote(
     if re.search(r'\b(?:of\s+age|-year-old|-old\b|years?\s+old\b)', norm_quote):
         return False
 
-    # 3. Education tenure filters (college, university, study, school, education, degree)
-    if re.search(r'\b(?:college|university|school|study|studies|education|degree)\b', norm_quote):
+    # 3. Education & non-career role filters
+    if scope == "education":
+        return False
+    if re.search(r'\b(?:college|university|study|studies|studying|degree|degrees|bachelor|bachelors|master|masters|phd|coursework)\b', norm_quote):
+        return False
+    if re.search(r'\b(?:student|intern|internship|trainee|apprentice|fellow)\b', norm_quote):
         return False
 
     # 4. Number sits next to years / yrs / decade / decades
@@ -170,10 +174,10 @@ def extract_candidate_experience(resume_text: str) -> ExperienceResult:
             for m in re.finditer(p, resume_text, re.IGNORECASE):
                 # Elapsed time / age rejection
                 after_text = resume_text[m.end():m.end() + 25].lower()
-                if re.match(r'^\s*(?:ago\b|old\b|-old\b|-year-old\b|of\s+age\b)', after_text):
+                if re.match(r'^\s*(?:ago\b|old\b|-old\b|-year-old\b|of\s+age\b|required\b|needed\b)', after_text):
                     continue
-                # Education tenure rejection
-                if re.match(r'^\s*(?:in|of)\s+(?:college|university|school|study|studies|education|degree)\b', after_text):
+                # Education study tenure rejection (exclude study words, keep profession phrases like 'in education')
+                if re.match(r'^\s*(?:in|of)\s+(?:college|university|study|studies|studying|degree)\b', after_text):
                     continue
 
                 before_text = resume_text[max(0, m.start() - 25):m.start()].lower()
@@ -252,7 +256,8 @@ async def extract_candidate_experience_with_llm(
                 "status": "string",
                 "years": 0,
                 "evidence_quote": "string",
-                "scope": "string"
+                "scope": "string",
+                "covers_entire_career": True
             },
             temperature=0.0
         )
@@ -260,12 +265,13 @@ async def extract_candidate_experience_with_llm(
         years = raw_response.get("years")
         quote = raw_response.get("evidence_quote")
         scope = raw_response.get("scope")
+        covers_entire_career = raw_response.get("covers_entire_career")
 
         if status == "found":
             if not isinstance(years, int) or years < 0 or years > 50:
                 return ExperienceResult(status="not_found", years=None, source="llm")
-            if scope != "total_career":
-                logger.warning(f"Candidate experience rejected due to scope {scope!r} != 'total_career': quote={quote!r}")
+            if scope != "total_career" or covers_entire_career is not True:
+                logger.warning(f"Candidate experience rejected due to scope={scope!r}, covers_entire_career={covers_entire_career!r}: quote={quote!r}")
                 return ExperienceResult(status="not_found", years=None, source="llm")
             if not verify_evidence_quote(quote, resume_text, years, mode="candidate", scope=scope):
                 logger.warning(f"Candidate experience quote verification failed: quote={quote!r}, years={years}")
@@ -274,6 +280,8 @@ async def extract_candidate_experience_with_llm(
 
         elif status == "explicit_zero":
             if scope and scope != "total_career":
+                return ExperienceResult(status="not_found", years=None, source="llm")
+            if covers_entire_career is False:
                 return ExperienceResult(status="not_found", years=None, source="llm")
             if quote and not verify_evidence_quote(quote, resume_text, 0, mode="candidate", scope="total_career"):
                 return ExperienceResult(status="not_found", years=None, source="llm")

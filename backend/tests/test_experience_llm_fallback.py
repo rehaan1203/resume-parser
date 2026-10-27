@@ -17,7 +17,8 @@ async def test_candidate_llm_found_valid_quote():
         "status": "found",
         "years": 7,
         "evidence_quote": "over seven years working in software",
-        "scope": "total_career"
+        "scope": "total_career",
+        "covers_entire_career": True
     }
     resume_text = "Senior developer with over seven years working in software architecture and systems."
     res = await extract_candidate_experience_with_llm(resume_text, client=mock_client)
@@ -196,7 +197,8 @@ async def test_candidate_llm_number_word_ten_years():
         "status": "found",
         "years": 10,
         "evidence_quote": "a career spanning ten years",
-        "scope": "total_career"
+        "scope": "total_career",
+        "covers_entire_career": True
     }
     resume_text = "Staff product manager possessing a career spanning ten years leading enterprise systems."
     res = await extract_candidate_experience_with_llm(resume_text, client=mock_client)
@@ -214,7 +216,8 @@ async def test_candidate_llm_number_word_a_decade():
         "status": "found",
         "years": 10,
         "evidence_quote": "a career spanning a decade",
-        "scope": "total_career"
+        "scope": "total_career",
+        "covers_entire_career": True
     }
     resume_text = "Staff product manager possessing a career spanning a decade leading enterprise systems."
     res = await extract_candidate_experience_with_llm(resume_text, client=mock_client)
@@ -318,6 +321,60 @@ GENUINE_QUOTES_MATRIX = [
 def test_verify_evidence_quote_comprehensive_matrix(quote, source, years, mode, scope, expected_valid):
     """Directly assert evidence quote verification across adversarial and genuine profession quotes with scope."""
     assert verify_evidence_quote(quote, source, years, mode=mode, scope=scope) is expected_valid
+
+
+TEACHING_PHRASES = [
+    ("15 years in education", "Candidate with 15 years in education leading curriculum design.", 15),
+    ("10 years in school administration", "Educator with 10 years in school administration.", 10),
+    ("8 years teaching high school mathematics", "Teacher with 8 years teaching high school mathematics.", 8),
+    ("12 years in secondary education", "Leader with 12 years in secondary education.", 12),
+    ("5 years as an elementary school teacher", "Certified teacher with 5 years as an elementary school teacher.", 5),
+    ("20 years in public education", "Veteran with 20 years in public education reform.", 20),
+    ("6 years in higher education leadership", "Dean with 6 years in higher education leadership.", 6),
+    ("14 years of classroom teaching experience", "Instructor with 14 years of classroom teaching experience.", 14),
+    ("7 years as a school principal", "Administrator with 7 years as a school principal.", 7),
+    ("11 years in educational counseling", "Counselor with 11 years in educational counseling.", 11),
+]
+
+@pytest.mark.parametrize("quote,text,years", TEACHING_PHRASES)
+def test_teaching_phrases_accepted(quote, text, years):
+    """Legitimate teaching and educational leadership phrases are accepted and not rejected by education filter."""
+    assert verify_evidence_quote(quote, text, years, mode="candidate", scope="total_career") is True
+
+
+@pytest.mark.asyncio
+async def test_covers_entire_career_false_rejected():
+    """LLM returning covers_entire_career=False downgrades to not_found even if scope is total_career."""
+    mock_client = AsyncMock()
+    mock_client.generate_structured_content.return_value = {
+        "status": "found",
+        "years": 6,
+        "evidence_quote": "6 years across engineering environments",
+        "scope": "total_career",
+        "covers_entire_career": False
+    }
+    resume_text = "Developer with 6 years across engineering environments at Acme."
+    res = await extract_candidate_experience_with_llm(resume_text, client=mock_client)
+    assert res.status == "not_found"
+    assert res.years is None
+
+
+@pytest.mark.asyncio
+async def test_adversarial_student_researcher_rejected():
+    """Adversarial quote '2 years as a student researcher' is rejected by student/intern filter."""
+    mock_client = AsyncMock()
+    mock_client.generate_structured_content.return_value = {
+        "status": "found",
+        "years": 2,
+        "evidence_quote": "2 years as a student researcher",
+        "scope": "total_career",
+        "covers_entire_career": True
+    }
+    resume_text = "Graduate assistant with 2 years as a student researcher in AI."
+    res = await extract_candidate_experience_with_llm(resume_text, client=mock_client)
+    assert res.status == "not_found"
+    assert res.years is None
+
 
 
 

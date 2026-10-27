@@ -16,19 +16,19 @@ def get_seniority_level(years: Optional[int]) -> Optional[str]:
     else:
         return "Executive"
 
-def _normalize_exp_input(val: Any, default_status: str) -> Tuple[str, Optional[int]]:
-    """Normalize input (ExperienceResult, int, dict, or None) to (status, years)."""
+def _normalize_exp_input(val: Any, default_status: str) -> Tuple[str, Optional[int], Optional[str], Optional[str]]:
+    """Normalize input (ExperienceResult, int, dict, or None) to (status, years, source, evidence)."""
     if val is None:
-        return default_status, None
+        return default_status, None, None, None
     if hasattr(val, "status") and hasattr(val, "years"):
-        return val.status, val.years
+        return val.status, val.years, getattr(val, "source", None), getattr(val, "evidence", None)
     if isinstance(val, dict):
-        return val.get("status", default_status), val.get("years")
+        return val.get("status", default_status), val.get("years"), val.get("source"), val.get("evidence")
     if isinstance(val, int):
         if val == 0:
-            return "explicit_zero", 0
-        return "found", val
-    return default_status, None
+            return "explicit_zero", 0, "regex", "0 years"
+        return "found", val, "regex", f"{val} years"
+    return default_status, None, None, None
 
 def calculate_seniority_score_and_gap(
     candidate_exp: Any,
@@ -44,8 +44,8 @@ def calculate_seniority_score_and_gap(
     - unconfirmed: candidate experience not_found or error (seniority not assessed)
     - not_specified: JD experience not_specified or error (seniority not assessed)
     """
-    cand_status, cand_years = _normalize_exp_input(candidate_exp, "not_found")
-    jd_status, jd_years = _normalize_exp_input(required_exp, "not_specified")
+    cand_status, cand_years, cand_source, cand_evidence = _normalize_exp_input(candidate_exp, "not_found")
+    jd_status, jd_years, jd_source, jd_evidence = _normalize_exp_input(required_exp, "not_specified")
 
     # 1. JD not specified or error -> not_specified
     if jd_status in ("not_specified", "error"):
@@ -62,7 +62,13 @@ def calculate_seniority_score_and_gap(
             "your_level": get_seniority_level(cand_years),
             "required_level": None,
             "seniority_reason": reason,
-            "badge": "⚪ NOT SPECIFIED"
+            "badge": "⚪ NOT SPECIFIED",
+            "evidence": cand_evidence,
+            "source": cand_source,
+            "candidate_source": cand_source,
+            "candidate_evidence": cand_evidence,
+            "jd_source": jd_source,
+            "jd_evidence": jd_evidence
         }
 
     # 2. Candidate unconfirmed or error -> unconfirmed
@@ -80,7 +86,13 @@ def calculate_seniority_score_and_gap(
             "your_level": None,
             "required_level": get_seniority_level(jd_years),
             "seniority_reason": reason,
-            "badge": "⚪ UNCONFIRMED"
+            "badge": "⚪ UNCONFIRMED",
+            "evidence": cand_evidence,
+            "source": cand_source,
+            "candidate_source": cand_source,
+            "candidate_evidence": cand_evidence,
+            "jd_source": jd_source,
+            "jd_evidence": jd_evidence
         }
 
     # 3. JD explicit zero gives match
@@ -98,7 +110,13 @@ def calculate_seniority_score_and_gap(
             "your_level": get_seniority_level(c_years),
             "required_level": "Entry",
             "seniority_reason": "Entry-level position; no prior experience required.",
-            "badge": "✅ PERFECT MATCH"
+            "badge": "✅ PERFECT MATCH",
+            "evidence": cand_evidence,
+            "source": cand_source,
+            "candidate_source": cand_source,
+            "candidate_evidence": cand_evidence,
+            "jd_source": jd_source,
+            "jd_evidence": jd_evidence
         }
 
     # 4. Both candidate and JD have stated experience (found or explicit_zero)
@@ -135,5 +153,11 @@ def calculate_seniority_score_and_gap(
         "your_level": get_seniority_level(c_years),
         "required_level": get_seniority_level(r_years),
         "seniority_reason": reason,
-        "badge": badge
+        "badge": badge,
+        "evidence": cand_evidence,
+        "source": cand_source,
+        "candidate_source": cand_source,
+        "candidate_evidence": cand_evidence,
+        "jd_source": jd_source,
+        "jd_evidence": jd_evidence
     }
