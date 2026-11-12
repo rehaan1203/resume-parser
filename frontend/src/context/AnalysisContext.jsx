@@ -14,7 +14,7 @@ export const AnalysisProvider = ({ children }) => {
         setFormData(prev => ({ ...prev, ...data }));
         setHasUnanalyzedChanges(true);
     };
-    const submitAnalysis = async (forceFresh = false) => {
+    const submitAnalysis = async () => {
         setState('LOADING');
         setError(null);
         setProgress(0);
@@ -25,13 +25,6 @@ export const AnalysisProvider = ({ children }) => {
         await new Promise(resolve => setTimeout(resolve, 0));
 
         try {
-            if (forceFresh) {
-                try {
-                    await api.resetCache();
-                } catch (e) {
-                    console.error("Failed to reset cache", e);
-                }
-            }
             const res = await api.analyzeStream(formData, (prog, msg) => {
                 setProgress(prog);
                 setProgressMsg(msg);
@@ -52,9 +45,6 @@ export const AnalysisProvider = ({ children }) => {
         setError(null);
         setState('IDLE');
         setHasUnanalyzedChanges(true);
-        
-        // Reset cache in the background without blocking UI
-        api.resetCache().catch(e => console.error(e));
     };
     return (<AnalysisContext.Provider value={{ state, formData, results, setResults, error, updateForm, submitAnalysis, resetAnalysis, hasUnanalyzedChanges, progress, progressMsg }}>
       {children}

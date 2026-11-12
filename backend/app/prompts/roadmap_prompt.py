@@ -43,6 +43,59 @@ def build_upskill_roadmap_prompt(gaps: List[str], gap_type: str = "standard_upsk
         """
 
 
+def build_rag_upskill_roadmap_prompt(
+    gaps: List[str],
+    gap_type: str = "standard_upskill",
+    verified_resources: List[dict] = None,
+    target_role: str = "",
+) -> str:
+    """Build prompt for generating an upskilling roadmap grounded in verified catalog resources."""
+    weeks_count = get_roadmap_weeks_count(gap_type)
+    role_ctx = f" targeting '{target_role}'" if target_role else ""
+
+    if verified_resources:
+        resources_lines = []
+        # Cap to top 8 resources and truncate descriptions to 100 chars to protect token budget
+        for r in verified_resources[:8]:
+            title = r.get("title", "")
+            url = r.get("url", "")
+            rtype = r.get("type", r.get("resource_type", "Resource"))
+            raw_desc = r.get("description", "")
+            desc = (raw_desc[:97] + "...") if len(raw_desc) > 100 else raw_desc
+            resources_lines.append(f"- [{title}]({url}) ({rtype}: {desc})")
+        resources_text = "\n".join(resources_lines)
+    else:
+        resources_text = "None provided. Use reputable, working official documentation or top learning platform URLs."
+
+    return f"""
+        Generate a highly structured, non-repeating learning roadmap for a candidate{role_ctx} missing these skills: {', '.join(gaps)}.
+        The roadmap must be EXACTLY {weeks_count} weeks long. Every single day in those weeks must have unique content and at least one real-world resource link.
+
+        VERIFIED LEARNING RESOURCES AVAILABLE:
+{resources_text}
+
+        MANDATORY URL USAGE INSTRUCTIONS:
+        1. Stay strictly aligned with the target stack and missing skills ({', '.join(gaps)}). NEVER introduce competing cloud vendors (e.g., do NOT suggest AWS services/courses or compare with AWS when target skills are Azure or GCP).
+        2. Prioritize and draw from the verified resources listed above whenever applicable for a day's topic. Use their exact URLs, and vary resources across days rather than repeating one generic link back-to-back.
+        3. DO NOT hallucinate fake or placeholder URLs (such as 'youtube.com/watch?v=12345' or 'arxiv.org/abs/12345').
+        4. If no verified resource matches a specific day's topic, use real, working official documentation URLs (e.g. docs.python.org, learn.microsoft.com, langchain-ai.github.io, official vendor portals).
+
+        CRITICAL TOKEN LIMIT: To prevent truncation for long {weeks_count}-week roadmaps, you MUST keep every 'action' description concise (under 20 words) and provide 1-2 highly relevant URLs per day. Do not add any extra commentary.
+        
+        Output format:
+        - type: "{gap_type}"
+        - title: "Upskill Roadmap ({weeks_count} Weeks)"
+        - weeks: List of week objects, each containing:
+            - week: week number
+            - focus: week theme
+            - days: List of 7 day objects (for that week), each containing:
+                - day: absolute day number (1, 2, ..., {weeks_count * 7})
+                - action: what to do
+                - resources: list of URLs
+                - estimated_time: string (e.g., "2 hours")
+        """
+
+
 def build_transition_roadmap_prompt(
     resume_domain: str,
     jd_domain: str,

@@ -10,7 +10,10 @@ from unittest.mock import AsyncMock, patch
 
 from app.ai.explainer import Phase3Explainer
 from app.api.routes.transition import generate_transition_roadmap, generate_transition_tips
-from app.utils.experience_extractor import extract_years_experience
+from app.utils.experience_extractor import (
+    extract_candidate_experience_with_llm,
+    extract_required_experience_with_llm,
+)
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures" / "prompts"
 
@@ -209,7 +212,7 @@ async def test_caller_experience_extraction():
     async def mock_generate(prompt, output_schema, **kwargs):
         nonlocal captured_prompt
         captured_prompt = prompt
-        return {}
+        return {"status": "not_found", "years": None, "evidence_quote": None}
 
     sample_text = "Lead software developer managing distributed systems and enterprise infrastructure."
     with patch("app.utils.experience_extractor.GenAIClient") as mock_client_cls:
@@ -217,10 +220,27 @@ async def test_caller_experience_extraction():
         mock_instance.generate_structured_content = mock_generate
         mock_client_cls.return_value = mock_instance
 
-        with patch("app.utils.experience_extractor.CacheManager") as mock_cache_cls:
-            mock_cache = AsyncMock()
-            mock_cache.get.return_value = None
-            mock_cache_cls.return_value = mock_cache
-            await extract_years_experience(sample_text)
+        await extract_candidate_experience_with_llm(sample_text)
 
-    assert captured_prompt == read_fixture("experience_extraction.txt")
+    assert captured_prompt == read_fixture("candidate_experience_extraction.txt")
+
+
+@pytest.mark.asyncio
+async def test_caller_jd_experience_extraction():
+    captured_prompt = None
+
+    async def mock_generate(prompt, output_schema, **kwargs):
+        nonlocal captured_prompt
+        captured_prompt = prompt
+        return {"status": "not_specified", "years": None, "evidence_quote": None}
+
+    sample_text = "Lead software developer managing distributed systems and enterprise infrastructure."
+    with patch("app.utils.experience_extractor.GenAIClient") as mock_client_cls:
+        mock_instance = AsyncMock()
+        mock_instance.generate_structured_content = mock_generate
+        mock_client_cls.return_value = mock_instance
+
+        await extract_required_experience_with_llm(sample_text)
+
+    assert captured_prompt == read_fixture("jd_experience_extraction.txt")
+

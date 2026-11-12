@@ -2,6 +2,7 @@
 from typing import List, Dict, Any
 from app.ai.client import GenAIClient
 from app.prompts.ats_prompt import ATS_OPTIMIZATION_PROMPT
+from app.utils.document_chunker import extract_core_sections
 from app.utils.logger import logger
 
 class ATSOptimizer:
@@ -9,6 +10,7 @@ class ATSOptimizer:
     
     def __init__(self, client: GenAIClient):
         self.client = client
+        self.is_fallback = False
     
     async def optimize(
         self,
@@ -18,6 +20,7 @@ class ATSOptimizer:
     ) -> Dict[str, Any]:
         """Generate ATS optimization suggestions."""
         try:
+            self.is_fallback = False
             # Prepare friction points for prompt
             fp_text = "\n".join([
                 f"- {fp.get('description', '')}: {fp.get('suggestion', '')}"
@@ -25,8 +28,8 @@ class ATSOptimizer:
             ])
             
             prompt = ATS_OPTIMIZATION_PROMPT.format(
-                resume=resume[:2000],
-                jd=jd[:2000],
+                resume=extract_core_sections(resume, doc_type="resume", max_chars=4000),
+                jd=extract_core_sections(jd, doc_type="jd", max_chars=4000),
                 friction_points=fp_text or "No friction points identified"
             )
             
@@ -48,17 +51,18 @@ class ATSOptimizer:
             
         except Exception as e:
             logger.error(f"ATS optimization failed: {e}")
+            self.is_fallback = True
             return self._get_default_suggestions()
     
     def _get_default_suggestions(self) -> Dict[str, Any]:
         """Get default suggestions if AI fails."""
         return {
-            "keywords_to_add": ["Python", "Docker", "Kubernetes", "Cloud", "CI/CD"],
+            "keywords_to_add": ["Relevant Industry Certifications", "Core Domain Methodologies", "Standard Regulatory Frameworks"],
             "phrasing_improvements": [
-                {"original": "Managed teams", "suggested": "Led teams", "reason": "More active and impactful"},
-                {"original": "Worked on", "suggested": "Developed", "reason": "Shows ownership"}
+                {"original": "Managed responsibilities", "suggested": "Orchestrated key initiatives", "reason": "More impactful and demonstrates leadership"},
+                {"original": "Assisted with tasks", "suggested": "Executed core operational deliverables", "reason": "Demonstrates proactive ownership"}
             ],
-            "section_reordering": ["Skills", "Experience", "Education"],
-            "formatting_tips": ["Use bullet points", "Include metrics", "Use action verbs"],
+            "section_reordering": ["Core Competencies", "Professional Experience", "Education & Certifications"],
+            "formatting_tips": ["Use standard section headings", "Include measurable outcomes", "Use clear, consistent bullet points"],
             "ats_score": 65
         }

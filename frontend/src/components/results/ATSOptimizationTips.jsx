@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { Target, PlusCircle, Edit3, LayoutTemplate, Briefcase, GraduationCap, Award, FileText } from 'lucide-react';
 import { cn } from '../../utils/cn';
 
-export const ATSOptimizationTips = ({ tips }) => {
+export const ATSOptimizationTips = ({ tips, isDegraded }) => {
     if (!tips) return null;
 
     const isLegacy = Array.isArray(tips);
@@ -66,9 +66,16 @@ export const ATSOptimizationTips = ({ tips }) => {
 
     return (
         <div className="space-y-4">
-            <h3 className="text-xl font-bold mb-4 flex items-center text-zinc-900 dark:text-zinc-100">
-                {title} <span className="ml-2 px-2 py-0.5 text-sm bg-zinc-100 dark:bg-zinc-800 rounded-full">{titleCount}</span>
-            </h3>
+            <div className="flex items-center justify-between mb-2">
+                <h3 className="text-xl font-bold flex items-center text-zinc-900 dark:text-zinc-100">
+                    {title} <span className="ml-2 px-2 py-0.5 text-sm bg-zinc-100 dark:bg-zinc-800 rounded-full">{titleCount}</span>
+                </h3>
+                {isDegraded && (
+                    <span className="text-xs px-2.5 py-1 rounded bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/30">
+                        Generic suggestions shown: automated suggestions were unavailable
+                    </span>
+                )}
+            </div>
             
             {isTransition && (
                 <div className="bg-rose-50 dark:bg-rose-900/10 border-l-4 border-rose-500 p-4 rounded-r-md mb-4 text-sm text-rose-800 dark:text-rose-200">

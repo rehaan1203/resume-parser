@@ -42,9 +42,9 @@ export const RecruitersVerdict = ({ reasoning, domainAnalysis }) => {
                                 <span className="mx-2">•</span>
                                 <span className={cn(
                                     "font-semibold", 
-                                    domainAnalysis.match ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
+                                    (domainAnalysis.domain_match ?? domainAnalysis.match) ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
                                 )}>
-                                    {domainAnalysis.match ? "Domain Match" : "Domain Mismatch"}
+                                    {(domainAnalysis.domain_match ?? domainAnalysis.match) ? "Domain Match" : "Domain Mismatch"}
                                 </span>
                             </div>
                         )}

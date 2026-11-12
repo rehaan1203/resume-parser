@@ -22,6 +22,7 @@ class TransitionResponse(BaseModel):
     roadmap: dict
     transition_tips: dict
     seniority: dict
+    degraded_sections: List[str] = Field(default_factory=list, alias="degradedSections")
 
 @router.post("/transition-plan", response_model=TransitionResponse)
 async def generate_transition_plan(request: TransitionRequest):
@@ -31,6 +32,7 @@ async def generate_transition_plan(request: TransitionRequest):
     """
     try:
         logger.info(f"📋 Generating transition plan: {request.resume_domain} → {request.jd_domain}")
+        degraded = []
         
         # Generate transition roadmap
         roadmap = await generate_transition_roadmap(
@@ -39,6 +41,8 @@ async def generate_transition_plan(request: TransitionRequest):
             resume=request.resume,
             jd=request.jd
         )
+        if roadmap.get("is_fallback"):
+            degraded.append("transition_roadmap")
         
         # Generate transition tips (education, certifications, portfolio)
         transition_tips = await generate_transition_tips(
@@ -47,6 +51,8 @@ async def generate_transition_plan(request: TransitionRequest):
             resume=request.resume,
             jd=request.jd
         )
+        if transition_tips.get("is_fallback"):
+            degraded.append("transition_tips")
         
         return TransitionResponse(
             status="transition_plan",
@@ -58,7 +64,8 @@ async def generate_transition_plan(request: TransitionRequest):
             seniority={
                 "status": "domain_mismatch",
                 "message": "Seniority comparison is not applicable for a career transition."
-            }
+            },
+            degraded_sections=degraded
         )
         
     except Exception as e:
@@ -118,7 +125,8 @@ async def generate_transition_roadmap(resume_domain: str, jd_domain: str, resume
                         f"Inventory transferable skills from your background in {resume_domain.replace('_', ' ').title()}"
                     ]
                 }
-            ]
+            ],
+            "is_fallback": True
         }
 
 
@@ -157,5 +165,6 @@ async def generate_transition_tips(resume_domain: str, jd_domain: str, resume: s
             "resume_strategy": [
                 f"Highlight transferable competencies from {resume_domain.replace('_', ' ').title()}",
                 f"Frame previous responsibilities around methodologies relevant to {jd_domain.replace('_', ' ').title()}"
-            ]
+            ],
+            "is_fallback": True
         }

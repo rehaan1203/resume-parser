@@ -1,20 +1,21 @@
 """FastAPI application entry point with all features."""
 import os
 import ssl
-
-# Bypass SSL verification for corporate proxies (development only)
-os.environ['CURL_CA_BUNDLE'] = ''
-os.environ['REQUESTS_CA_BUNDLE'] = ''
-ssl._create_default_https_context = ssl._create_unverified_context
+import asyncio
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from contextlib import asynccontextmanager
-import nltk
 
 from app.config import settings
-from app.api.routes import analysis, health, cache, upload, streaming, advanced, feedback, learning, transition
+
+# Gate SSL verification bypass strictly when explicitly configured for dev corporate proxies
+if not getattr(settings, "ai_ssl_verify", False):
+    os.environ["CURL_CA_BUNDLE"] = ""
+    os.environ["REQUESTS_CA_BUNDLE"] = ""
+    ssl._create_default_https_context = ssl._create_unverified_context
+from app.api.routes import analysis, health, cache, upload, streaming, advanced, feedback, learning, transition, telemetry, outlook, sharepoint
 from app.middleware.error_handler import add_error_handlers
 from app.middleware.rate_limit import RateLimitMiddleware
 from app.middleware.monitoring import MonitoringMiddleware
@@ -33,8 +34,9 @@ async def lifespan(app: FastAPI):
     logger.info(f"AI Service: {'Enabled' if settings.use_ai_service else 'Disabled'}")
     logger.info(f"Cache: {'Enabled' if settings.cache_enabled else 'Disabled'}")
     
-    # Download NLTK data
+    # Download NLTK data lazily
     try:
+        import nltk
         nltk.download('punkt', quiet=True)
         nltk.download('stopwords', quiet=True)
         logger.info("NLTK data downloaded successfully")
@@ -49,10 +51,55 @@ async def lifespan(app: FastAPI):
         else:
             logger.warning("Redis connection failed - cache will be disabled")
     
+    # Eagerly initialize and warm up RAG Knowledge Base catalogs & embeddings
+    try:
+        from app.knowledge.retriever import get_retriever
+        retriever = get_retriever()
+        indexed_count = await retriever.initialize_and_index_catalogs()
+        logger.info(f"RAG Knowledge Base eager warmup complete: {indexed_count} verified resources indexed.")
+
+        # Optional detached self-healing background audit if enabled in configuration
+        if getattr(settings, "rag_auto_health_audit_on_startup", False):
+            from app.tasks.catalog_health import CatalogHealthAuditor
+            asyncio.create_task(CatalogHealthAuditor().audit_all_catalogs(auto_suggest_replacements=True))
+            logger.info("Asynchronous background RAG catalog health audit initiated.")
+    except Exception as e:
+        logger.warning(f"RAG Knowledge Base eager warmup encountered non-blocking warning: {e}")
+
+    # Start Autonomous Outlook Background Poller if enabled and configured
+    outlook_stop_event = asyncio.Event()
+    outlook_task = None
+    if getattr(settings, "outlook_auto_poll_enabled", False):
+        try:
+            from app.services.outlook_service import outlook_service
+            if outlook_service.is_configured():
+                outlook_task = asyncio.create_task(outlook_service.start_background_listener(outlook_stop_event))
+                logger.info("Autonomous Outlook HR Poller initialized in background.")
+            else:
+                logger.info("Outlook service credentials incomplete; background poller skipped.")
+        except Exception as e:
+            logger.warning(f"Could not initialize Outlook background poller: {e}")
+
     yield
     
     # Shutdown
     logger.info(f"Shutting down {settings.app_name}")
+    if outlook_stop_event:
+        outlook_stop_event.set()
+    if outlook_task:
+        try:
+            await asyncio.wait_for(outlook_task, timeout=2.0)
+        except Exception:
+            pass
+    try:
+        await outlook_service.close()
+    except Exception:
+        pass
+    try:
+        from app.ai.client import GenAIClient
+        await GenAIClient.close_shared()
+    except Exception:
+        pass
     if settings.cache_enabled:
         await RedisClient().close()
 
@@ -99,6 +146,9 @@ app.include_router(streaming.router, prefix=api_prefix, tags=["Streaming"])
 app.include_router(advanced.router, prefix=api_prefix, tags=["Advanced"])
 app.include_router(feedback.router, prefix=api_prefix, tags=["Feedback"])
 app.include_router(learning.router, prefix=f"{api_prefix}/learning", tags=["Learning"])
+app.include_router(telemetry.router, prefix=api_prefix, tags=["Telemetry"])
+app.include_router(outlook.router, prefix=api_prefix, tags=["Outlook HR Agent"])
+app.include_router(sharepoint.router, prefix=api_prefix, tags=["SharePoint JDs"])
 
 # Root endpoint
 @app.get("/", tags=["Root"])

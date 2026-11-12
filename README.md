@@ -5,7 +5,7 @@ Friction Matcher is an advanced AI-augmented web application designed to analyze
 ## 🚀 Features
 
 - **Deterministic Parsing:** Extracts exact years of experience, domain detection, and skill matching using structured logic before falling back to AI.
-- **Comprehensive Match Scoring:** Evaluates candidates based on technical skills, soft skills, and seniority alignment.
+- **Comprehensive Match Scoring:** Evaluates candidates based on technical skills, soft skills, and seniority alignment. Overall score uses configurable weighting via `SKILLS_WEIGHT` (default `0.6`) and `SENIORITY_WEIGHT` (default `0.4`). When seniority is unconfirmed or not specified in the JD, weights renormalize to skills only.
 - **AI-Powered Insights:** Uses Google Gemini (or Mistral) to generate executive summaries, ATS optimization tips, and personalized learning roadmaps.
 - **Verified Resources:** An internal `LinkProcessor` validates AI-generated links to ensure candidates only receive functional YouTube and external resources.
 - **Domain Guardrails:** Detects if a candidate is applying outside their industry and generates specialized "Career Change" roadmaps instantly.
@@ -78,6 +78,23 @@ The project is strictly separated into a client and server model to ensure scala
 ## 🔒 Security & Limits
 
 The application includes built-in rate limiting to prevent API abuse and excessive LLM costs. By default, it allows 10 requests per minute and 100 requests per day per IP address.
+
+## 🧪 Running Tests
+
+All backend unit and integration tests are hermetic by default (external sockets, LLM APIs, and Redis are blocked or stubbed).
+
+```bash
+cd backend
+
+# Run the full hermetic test suite (default):
+pytest
+
+# Run tests including live integration checks (requires network and running services):
+pytest -m "live"
+
+# Run a specific test file:
+pytest tests/test_seniority_matrix.py
+```
 
 ## 🤝 Contributing
 

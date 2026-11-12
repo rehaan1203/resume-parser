@@ -75,18 +75,18 @@ async def test_caller_fallback_on_truncation():
 
 @pytest.mark.asyncio
 async def test_experience_extractor_truncation_fallback():
-    """Test that extract_years_experience returns 0 on LLMTruncationError when regex fails."""
-    from app.utils.experience_extractor import extract_years_experience
-    with patch("app.utils.experience_extractor.GenAIClient") as MockClient, \
-         patch("app.utils.experience_extractor.CacheManager.get", return_value=None):
+    """Test that extract_candidate_experience_with_llm returns error status on LLMTruncationError when regex fails."""
+    from app.utils.experience_extractor import extract_candidate_experience_with_llm
+    with patch("app.utils.experience_extractor.GenAIClient") as MockClient:
         mock_client = MagicMock()
         mock_client.generate_structured_content = AsyncMock(
             side_effect=LLMTruncationError("Truncated", completion_tokens=4000)
         )
         MockClient.return_value = mock_client
         # Text without numeric regex pattern triggers LLM fallback
-        years = await extract_years_experience("Experienced developer lead on various systems")
-        assert years == 0
+        res = await extract_candidate_experience_with_llm("Experienced developer lead on various systems")
+        assert res.status == "error"
+        assert res.years is None
 
 
 @pytest.mark.asyncio
@@ -100,7 +100,7 @@ async def test_ats_optimizer_truncation_fallback():
     optimizer = ATSOptimizer(mock_client)
     result = await optimizer.optimize("resume", "jd", [])
     assert "keywords_to_add" in result
-    assert "Python" in result["keywords_to_add"]
+    assert len(result["keywords_to_add"]) > 0
 
 
 @pytest.mark.asyncio

@@ -1,6 +1,9 @@
 import asyncio
 import httpx
+import pytest
 
+@pytest.mark.asyncio
+@pytest.mark.live
 async def test_yt():
     url = "https://www.youtube.com/watch?v=g34ZoiKJVG0"
     print(f"Testing {url}")

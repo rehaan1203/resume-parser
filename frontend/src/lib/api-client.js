@@ -46,71 +46,97 @@ export const api = {
         }
     },
     analyzeStream: async (data, onProgress) => {
-        const response = await fetch(`${API_BASE}/api/v1/analyze/stream`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'text/event-stream'
-            },
-            body: JSON.stringify({
-                resume: data.resume,
-                jdText: data.jdText,
-                jdUrl: data.jdUrl,
-                includeRoadmap: data.includeRoadmap !== undefined ? data.includeRoadmap : true,
-            }),
-        });
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 180000);
 
-        if (!response.ok) {
-            let errorMsg = 'Analysis failed';
-            try {
-                const error = await response.json();
-                errorMsg = error.detail || errorMsg;
-            } catch (e) {
-                // Ignore parse error
+        try {
+            const response = await fetch(`${API_BASE}/api/v1/analyze/stream`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'text/event-stream'
+                },
+                signal: controller.signal,
+                body: JSON.stringify({
+                    resume: data.resume,
+                    jdText: data.jdText,
+                    jdUrl: data.jdUrl,
+                    includeRoadmap: data.includeRoadmap !== undefined ? data.includeRoadmap : true,
+                }),
+            });
+
+            if (!response.ok) {
+                let errorMsg = 'Analysis failed';
+                try {
+                    const error = await response.json();
+                    errorMsg = error.detail || errorMsg;
+                } catch (e) {
+                    // Ignore parse error
+                }
+                throw new Error(errorMsg);
             }
-            throw new Error(errorMsg);
-        }
 
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder("utf-8");
-        let buffer = "";
-        let finalResult = null;
+            if (!response.body) {
+                throw new Error('Streaming response body unavailable.');
+            }
 
-        while (true) {
-            const { value, done } = await reader.read();
-            if (done) break;
-            
-            buffer += decoder.decode(value, { stream: true });
-            
-            const lines = buffer.split('\n');
-            // Keep the last partial line in the buffer
-            buffer = lines.pop();
-            
-            for (const line of lines) {
-                if (line.startsWith('data: ')) {
-                    try {
-                        const eventData = JSON.parse(line.slice(6));
-                        if (eventData.type === 'progress') {
-                            if (onProgress) {
-                                onProgress(eventData.progress, eventData.message);
-                            }
-                        } else if (eventData.type === 'complete') {
-                            finalResult = eventData.result;
-                        } else if (eventData.type === 'error') {
-                            throw new Error(eventData.message);
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder("utf-8");
+            let buffer = "";
+            let finalResult = null;
+
+            const processLine = (line) => {
+                if (!line.startsWith('data: ')) return;
+                try {
+                    const eventData = JSON.parse(line.slice(6));
+                    if (eventData.type === 'progress') {
+                        if (onProgress) {
+                            onProgress(eventData.progress, eventData.message);
                         }
-                    } catch (e) {
+                    } else if (eventData.type === 'complete') {
+                        finalResult = eventData.result;
+                    } else if (eventData.type === 'error') {
+                        throw new Error(eventData.message);
+                    }
+                } catch (e) {
+                    if (e instanceof SyntaxError) {
                         console.error("Failed to parse SSE line", e);
+                    } else {
+                        throw e;
                     }
                 }
+            };
+
+            while (true) {
+                const { value, done } = await reader.read();
+                if (done) break;
+
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split('\n');
+                buffer = lines.pop() || "";
+
+                for (const line of lines) {
+                    processLine(line);
+                }
             }
+
+            if (buffer.trim()) {
+                processLine(buffer.trim());
+            }
+
+            if (!finalResult) {
+                throw new Error("Analysis failed: Stream ended without result.");
+            }
+
+            return finalResult;
+        } catch (err) {
+            if (err?.name === 'AbortError') {
+                throw new Error('Analysis request timed out. Please try again.');
+            }
+            throw err;
+        } finally {
+            clearTimeout(timeoutId);
         }
-        
-        if (!finalResult) {
-            throw new Error("Analysis failed: Stream ended without result.");
-        }
-        
-        return finalResult;
     },
     transitionPlan: async (data) => {
         const response = await fetch(`${API_BASE}/api/v1/transition-plan`, {

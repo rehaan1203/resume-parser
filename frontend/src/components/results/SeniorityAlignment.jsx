@@ -3,7 +3,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { TrendingUp, Lightbulb, Pin } from 'lucide-react';
 
-export const SeniorityAlignment = ({ alignment }) => {
+export const SeniorityAlignment = ({ alignment, isDegraded }) => {
     if (!alignment) return null;
 
     // Extract properties
@@ -12,10 +12,12 @@ export const SeniorityAlignment = ({ alignment }) => {
     const alignmentType = alignment.alignment_status || "minor_gap"; // match, minor_gap, significant_gap
     const badge = alignment.alignment_badge || "🟡 MINOR GAP";
     const yourLevel = alignment.your_level || "Unknown";
-    const yourYears = alignment.your_years ?? 0;
+    const yourYears = alignment.your_years ?? alignment.years_experience ?? 0;
     const requiredLevel = alignment.required_level || "Unknown";
     const requiredYears = alignment.required_years ?? 0;
     const gap = alignment.gap ?? 0;
+    const candidateEvidence = alignment.evidence || alignment.candidate_evidence || alignment.candidateEvidence;
+    const candidateSource = alignment.source || alignment.candidate_source || alignment.candidateSource;
 
     // Dynamic styling based on alignment type
     let badgeStyle = "bg-gray-50 text-gray-700 dark:bg-gray-900/50 dark:text-gray-300 border-gray-200 dark:border-gray-800";
@@ -29,9 +31,16 @@ export const SeniorityAlignment = ({ alignment }) => {
 
     return (
         <div className="space-y-4">
-            <h3 className="text-xl font-bold mb-4 flex items-center text-zinc-900 dark:text-zinc-100">
-                Seniority Alignment
-            </h3>
+            <div className="flex items-center justify-between mb-2">
+                <h3 className="text-xl font-bold flex items-center text-zinc-900 dark:text-zinc-100">
+                    Seniority Alignment
+                </h3>
+                {isDegraded && (
+                    <span className="text-xs px-2.5 py-1 rounded bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/30">
+                        Generic suggestions shown: automated suggestions were unavailable
+                    </span>
+                )}
+            </div>
             
             <motion.div
                 initial={{ opacity: 0, y: 10 }}
@@ -58,6 +67,21 @@ export const SeniorityAlignment = ({ alignment }) => {
                         <div className="text-xs font-bold mt-1 tracking-wider">{badge}</div>
                     </motion.div>
                 </div>
+
+                {/* Experience Evidence Quote & Source */}
+                {candidateEvidence && (
+                    <div className="mt-4 p-3 bg-zinc-100/60 dark:bg-zinc-800/40 border border-zinc-200 dark:border-zinc-700/60 rounded-md text-xs text-zinc-600 dark:text-zinc-400 flex items-start justify-between gap-3">
+                        <div>
+                            <span className="font-semibold text-zinc-800 dark:text-zinc-200">Experience Evidence: </span>
+                            <span>We read {yourYears} years of experience from: &ldquo;{candidateEvidence}&rdquo;</span>
+                        </div>
+                        {candidateSource === 'llm' && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300 border border-blue-200 dark:border-blue-800 flex-shrink-0">
+                                estimated by AI
+                            </span>
+                        )}
+                    </div>
+                )}
 
                 {/* Summary Line */}
                 {summary && (

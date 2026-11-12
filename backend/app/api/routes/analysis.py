@@ -5,6 +5,7 @@ from app.models.api_models import AnalysisResponse
 from app.utils.cache_manager import CacheManager
 from app.config import settings
 from app.utils.logger import logger
+from app.utils.security import require_admin_access
 import traceback
 import json
 import asyncio
@@ -96,19 +97,37 @@ async def analyze_resume_stream(
         
         # Start analysis in the background
         task = asyncio.create_task(run_analysis())
-        
-        while True:
-            data = await queue.get()
-            # Format as Server-Sent Event
-            yield f"data: {json.dumps(data)}\n\n"
-            
-            if data["type"] in ["complete", "error"]:
-                break
-                
-    return StreamingResponse(event_generator(), media_type="text/event-stream")
+        try:
+            while True:
+                try:
+                    data = await asyncio.wait_for(queue.get(), timeout=15.0)
+                except asyncio.TimeoutError:
+                    # Keep proxy/reverse-proxy SSE connection alive during long LLM inference
+                    yield ": keepalive\n\n"
+                    continue
+
+                # Format as Server-Sent Event
+                yield f"data: {json.dumps(data)}\n\n"
+
+                if data["type"] in ["complete", "error"]:
+                    break
+        finally:
+            if not task.done():
+                task.cancel()
+                try:
+                    await task
+                except (asyncio.CancelledError, Exception):
+                    pass
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
 @router.delete(
     "/cache/reset",
     status_code=status.HTTP_200_OK,
+    dependencies=[Depends(require_admin_access)],
     summary="Reset analysis cache",
     description="Clears the redis cache for a fresh analysis"
 )

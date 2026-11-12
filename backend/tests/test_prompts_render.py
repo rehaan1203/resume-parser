@@ -21,7 +21,8 @@ from app.prompts.ats_prompt import (
 )
 from app.prompts.seniority_prompt import build_seniority_alignment_prompt
 from app.prompts.extraction_prompt import (
-    build_experience_extraction_prompt,
+    build_candidate_experience_prompt,
+    build_jd_experience_prompt,
 )
 from app.prompts.career_prompt import (
     INTERVIEW_QUESTIONS_PROMPT,
@@ -195,8 +196,14 @@ def test_seniority_large_gap_render():
 # 6. Extraction Prompts
 def test_experience_extraction_render():
     sample_text = "Lead software developer managing distributed systems and enterprise infrastructure."
-    rendered = build_experience_extraction_prompt(sample_text)
-    assert rendered == read_fixture("experience_extraction.txt")
+    rendered = build_candidate_experience_prompt(sample_text)
+    assert rendered == read_fixture("candidate_experience_extraction.txt")
+
+
+def test_jd_experience_extraction_render():
+    sample_text = "Lead software developer managing distributed systems and enterprise infrastructure."
+    rendered = build_jd_experience_prompt(sample_text)
+    assert rendered == read_fixture("jd_experience_extraction.txt")
 
 
 

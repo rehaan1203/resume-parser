@@ -1,0 +1,98 @@
+{
+  "description": "Gold Set of 12 Unlabeled Synthetic JD-Resume Pairs for Ground-Truth Annotation",
+  "labeling_template": {
+    "pair_id": "STRING (e.g. PAIR_01)",
+    "domain": "STRING (e.g. Healthcare)",
+    "jd_id": "STRING",
+    "resume_id": "STRING",
+    "annotator_labels": {
+      "overall_match_score": "INTEGER [0-100]",
+      "skills_match_score": "INTEGER [0-100]",
+      "seniority_match_score": "INTEGER [0-100] or null",
+      "seniority_status": "match | minor_gap | significant_gap | unconfirmed | not_specified",
+      "domain_relationship": "same | adjacent | different",
+      "extracted_requirements": [
+        {
+          "name": "STRING",
+          "category": "skill | tool | credential | degree | certification | experience_duration | language | soft_skill",
+          "importance": "required | preferred",
+          "matched_by_candidate": "BOOLEAN"
+        }
+      ]
+    }
+  },
+  "pairs": [
+    {
+      "pair_id": "PAIR_01",
+      "domain": "Healthcare / Nursing",
+      "jd": "ICU Staff Nurse needed for level-1 trauma hospital. Requirements: BSN degree from accredited nursing school, active California RN license, BLS and ACLS certifications. Minimum 3 years acute care ICU experience managing ventilators and arterial lines. Preferred: CCRN certification.",
+      "resume": "Registered Nurse with 4 years of intensive care experience at Baylor Scott & White. Current Texas RN multistate license, BLS and ACLS certified. Proficient in invasive hemodynamic monitoring, ventilator management, and CRRT therapy. BSN from UT Austin, 2020."
+    },
+    {
+      "pair_id": "PAIR_02",
+      "domain": "Corporate Law",
+      "jd": "Senior Healthcare Regulatory Counsel. Requirements: J.D. from accredited institution, active New York Bar admission, 7+ years practicing health law in-house or at peer firm. Deep experience with Stark Law, Anti-Kickback Statute, and HIPAA privacy compliance. Preferred: Certified in Healthcare Compliance (CHC).",
+      "resume": "Associate Attorney with 5 years experience in healthcare law firm practice in NYC. Admitted to New York State Bar. Extensive background counseling hospital systems on Anti-Kickback Statute, Stark Law exceptions, and OCR HIPAA investigations. J.D., Columbia Law School 2019."
+    },
+    {
+      "pair_id": "PAIR_03",
+      "domain": "Distributed Systems",
+      "jd": "Staff Backend Engineer - Distributed Storage. Requirements: 8+ years software engineering experience. Expertise in Go or C++, Raft/Paxos consensus algorithms, and Linux kernel I/O tuning. Experience operating petabyte-scale storage engines. Preferred: Contributions to etcd or RocksDB.",
+      "resume": "Principal Software Architect with 10 years experience building distributed storage infrastructure. Expert in Go and C++. Lead maintainer of in-house distributed consensus engine managing 5 PB of time-series data. B.S. in Computer Science."
+    },
+    {
+      "pair_id": "PAIR_04",
+      "domain": "HVAC / Skilled Trades",
+      "jd": "Commercial HVAC Service Specialist. Requirements: 4+ years commercial HVAC servicing experience, EPA Universal Certification, clean driving record. Proficient in troubleshooting chillers, rooftop packaged units, and pneumatic controls.",
+      "resume": "Residential and Light Commercial HVAC Tech with 5 years field experience. EPA 608 Universal Certified, valid driver license. Skilled in compressor replacements, refrigerant recovery, and electrical troubleshooting on Trane and Carrier systems."
+    },
+    {
+      "pair_id": "PAIR_05",
+      "domain": "Enterprise B2B Sales",
+      "jd": "Enterprise Account Executive (FinTech SaaS). Requirements: 5+ years quota-carrying SaaS sales experience closing 6-figure ACV deals with Tier-1 financial institutions. Proficiency with Salesforce and MEDDPICC sales methodology. Bachelor degree required.",
+      "resume": "Senior Account Executive with 6 years experience selling cybersecurity SaaS to enterprise banking clients. Exceeded quota 4 consecutive years, average deal size $220k. Certified in MEDDPICC, daily user of Salesforce and Gong. B.A. in Communications."
+    },
+    {
+      "pair_id": "PAIR_06",
+      "domain": "Financial Accounting",
+      "jd": "Senior Accounting Manager. Requirements: Active CPA license, 6+ years experience in public accounting or corporate controllership, advanced Excel modeling and US GAAP reconciliation. Preferred: Experience managing Big 4 annual audit reviews.",
+      "resume": "Audit Senior with 4 years experience at PwC followed by 2 years as Corporate Accounting Lead. Active CPA (California). Managed month-end close, ASC 606 revenue recognition, and technical accounting memos. M.S. in Accounting."
+    },
+    {
+      "pair_id": "PAIR_07",
+      "domain": "Commercial Architecture",
+      "jd": "Project Architect - Commercial High-Rise. Requirements: Professional B.Arch or M.Arch degree, Licensed Architect (AIA/NCARB), 6+ years experience leading commercial mixed-use construction documentation. Expert in Revit, AutoCAD, and IBC building codes.",
+      "resume": "Architectural Designer with 5 years experience at Gensler. Master of Architecture from Cornell. Advanced proficiency in Autodesk Revit BIM modeling and parametric design. Currently completing NCARB ARE exams for licensure."
+    },
+    {
+      "pair_id": "PAIR_08",
+      "domain": "Digital Marketing",
+      "jd": "Director of Growth Marketing. Requirements: 7+ years performance marketing experience scaling multi-channel paid acquisition (Meta, Google Ads, TikTok). Track record managing $500k/mo ad spend with strict CAC/LTV targets. Strong SQL and attribution modeling skills.",
+      "resume": "Growth Marketing Lead with 8 years experience managing B2C mobile app growth campaigns. Managed $750k monthly budgets across Google Search, Meta Ads, and programmatic DSPs. Proficient in SQL, Mixpanel, and incremental lift testing."
+    },
+    {
+      "pair_id": "PAIR_09",
+      "domain": "Supply Chain & Logistics",
+      "jd": "Operations & Logistics Manager. Requirements: 5+ years managing fulfillment center operations, warehouse management systems (WMS - Manhattan or SAP), and carrier contract negotiations. Six Sigma Green Belt preferred.",
+      "resume": "Warehouse Operations Supervisor with 6 years experience in regional distribution facilities. Managed 45-person shift, reduced picking turnaround time by 18%. Certified Six Sigma Green Belt, hands-on user of SAP EWM."
+    },
+    {
+      "pair_id": "PAIR_10",
+      "domain": "Secondary Education",
+      "jd": "High School AP Physics & Chemistry Teacher. Requirements: Bachelor's degree in Physics, Chemistry, or STEM education. State teaching certification in secondary science (Grades 9-12). Minimum 3 years classroom teaching experience.",
+      "resume": "Secondary Science Educator with 5 years experience teaching Honors Physics and AP Chemistry in Austin Public Schools. Valid Texas Educator Certificate (Science 7-12). B.S. in Physics with Teaching Certification."
+    },
+    {
+      "pair_id": "PAIR_11",
+      "domain": "Hospitality Management",
+      "jd": "General Manager - Boutique Luxury Hotel. Requirements: 8+ years leadership experience in 4-star or 5-star hotel operations, P&L management, food & beverage oversight, and Opera PMS proficiency. Bachelor's in Hospitality Management preferred.",
+      "resume": "Assistant General Manager with 9 years hospitality management experience at boutique resort properties. Managed $12M annual operating budget, guest satisfaction score 94%. Daily user of Opera PMS and Micros POS."
+    },
+    {
+      "pair_id": "PAIR_12",
+      "domain": "Data Engineering",
+      "jd": "Staff Data Engineer - Real-Time Analytics. Requirements: 6+ years data engineering experience. Deep expertise in Apache Spark, Apache Flink, Kafka, and Snowflake. Proficiency in Python and Scala. Experience designing streaming lakehouse architectures.",
+      "resume": "Lead Data Platform Engineer with 7 years experience building streaming data pipelines. Expert in Python and Scala, maintaining real-time Flink streaming jobs ingesting 50k events/sec into Snowflake and Apache Iceberg. B.S. in Computer Engineering."
+    }
+  ]
+}

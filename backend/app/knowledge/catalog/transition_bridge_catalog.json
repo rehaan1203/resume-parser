@@ -1,0 +1,462 @@
+[
+  {
+    "id": "bridge-tech-to-legal",
+    "source_domain": "tech",
+    "target_domain": "legal",
+    "transferable_strengths": [
+      "Software architecture & source code audit capability",
+      "Algorithmic logic decomposition & procedural reasoning",
+      "Technical due diligence & systems specification analysis",
+      "Data privacy, encryption, and cybersecurity architecture fundamentals"
+    ],
+    "bridge_certifications": [
+      "USPTO Patent Bar Exam (Registration for STEM degrees to practice patent law)",
+      "IAPP CIPP/E (Certified Information Privacy Professional / Europe)",
+      "IAPP CIPT (Certified Information Privacy Technologist)",
+      "Certified Legal Technology Specialist (CLTS)"
+    ],
+    "strategic_advice": "Position software engineering experience as high-value technical subject matter expertise for patent prosecution, open-source software license auditing, and cyber/privacy regulatory compliance. Highlight system architecture diagrams as the technical foundation for drafting defensible patent claims and compliance controls.",
+    "recommended_projects": [
+      "Build an automated open-source license scanner checking GitHub repositories for GPL/MIT license compatibility and liability exposure",
+      "Draft a mock USPTO patent claim and specification document for a novel distributed caching or consensus mechanism",
+      "Create an automated GDPR Data Subject Access Request (DSAR) compliance and data discovery pipeline"
+    ]
+  },
+  {
+    "id": "bridge-tech-to-healthcare",
+    "source_domain": "tech",
+    "target_domain": "healthcare",
+    "transferable_strengths": [
+      "Relational & NoSQL database management and ETL pipeline engineering",
+      "RESTful API design and interoperability standards (JSON/XML)",
+      "High-availability system monitoring, telemetry, and uptime maintenance",
+      "Information security protocols (RBAC, TLS encryption, audit logging)"
+    ],
+    "bridge_certifications": [
+      "CPHIMS (Certified Professional in Healthcare Information and Management Systems - HIMSS)",
+      "HL7 FHIR Fundamentals Certificate",
+      "Epic Systems Core Accreditation (Bridges, Chronicles, or Clarity)",
+      "AHIMA Certified Health Data Analyst (CHDA)"
+    ],
+    "strategic_advice": "Highlight backend software architecture, data pipelines, and API integration as direct equivalents to Clinical Informatics and EHR Interoperability. Emphasize experience maintaining 99.9% uptime as vital for clinical safety where system downtime directly impacts patient outcomes.",
+    "recommended_projects": [
+      "Develop a FHIR-compliant patient intake dashboard using FastAPI and React connected to a simulated HAPI FHIR server",
+      "Create an automated clinical data pipeline transforming CSV patient records into HL7 v2 messages with validation checks",
+      "Build a real-time hospital bed occupancy and telemetry tracking monitor with WebSockets"
+    ]
+  },
+  {
+    "id": "bridge-tech-to-finance",
+    "source_domain": "tech",
+    "target_domain": "finance",
+    "transferable_strengths": [
+      "High-throughput, low-latency microservices engineering",
+      "Complex numerical programming, statistical algorithms & Python Pandas",
+      "Automated testing, continuous validation & regression prevention",
+      "Cloud resource management and FinOps infrastructure cost optimization"
+    ],
+    "bridge_certifications": [
+      "CFA Level 1 (Chartered Financial Analyst)",
+      "FinOps Certified Practitioner (Linux Foundation)",
+      "Financial Risk Manager (FRM - GARP) Part 1",
+      "AWS Certified Data Engineer - Associate"
+    ],
+    "strategic_advice": "Frame backend microservice design as algorithmic trading and transaction processing engine architecture. Reposition cloud infrastructure optimization as enterprise FinOps and capital cost allocation.",
+    "recommended_projects": [
+      "Develop an automated backtesting framework for algorithmic equity trading strategies using Python Pandas and NumPy",
+      "Build a cloud infrastructure cost forecast and anomaly detection pipeline using the AWS Cost Explorer API and machine learning",
+      "Engineer a real-time crypto or forex order-book depth visualizer with WebSocket stream processing"
+    ]
+  },
+  {
+    "id": "bridge-tech-to-trades",
+    "source_domain": "tech",
+    "target_domain": "trades",
+    "transferable_strengths": [
+      "Logic ladder decomposition, automated control scripts & state machine design",
+      "Network routing, IP addressing & physical cabling topology understanding",
+      "Systematic hardware troubleshooting and root-cause fault isolation",
+      "Sensor telemetry data collection, IoT protocols (MQTT/Modbus)"
+    ],
+    "bridge_certifications": [
+      "OSHA 10-Hour General Industry Safety Certification",
+      "NFPA 70E (Standard for Electrical Safety in the Workplace)",
+      "BMS/BAS Technician Certification (Building Automation Systems)",
+      "CompTIA A+ or Cisco Certified Support Technician"
+    ],
+    "strategic_advice": "Position software logic, networking, and scripting skills as specialized expertise in modern Building Management Systems (BMS), Industrial Programmable Logic Controllers (PLCs), and smart HVAC controls. Frame technical troubleshooting as systematic diagnostic methodology.",
+    "recommended_projects": [
+      "Build an automated environmental control station using a Raspberry Pi/ESP32, relays, and Modbus/MQTT telemetry reporting",
+      "Create a PLC ladder logic simulator program for automated commercial conveyor sorting or water pump staging",
+      "Design a network wiring and sensor placement diagram for a smart commercial facility"
+    ]
+  },
+  {
+    "id": "bridge-legal-to-tech",
+    "source_domain": "legal",
+    "target_domain": "tech",
+    "transferable_strengths": [
+      "Statutory interpretation & deterministic rule decomposition",
+      "Complex contract drafting, licensing terms & intellectual property strategy",
+      "Enterprise risk assessment, regulatory audits & compliance mitigation",
+      "Structured documentation, evidence preservation & procedural rigor"
+    ],
+    "bridge_certifications": [
+      "IAPP CIPT (Certified Information Privacy Technologist)",
+      "Certified in Cybersecurity (CC - ISC2)",
+      "AWS Certified Solutions Architect - Associate",
+      "CompTIA Security+"
+    ],
+    "strategic_advice": "Frame legal contracts, statutory frameworks, and regulations as formal technical specifications and business logic rules. Position compliance audit experience as enterprise cybersecurity governance, data privacy engineering, and legal operations management.",
+    "recommended_projects": [
+      "Develop a compliance-as-code validation script scanning Terraform configurations for privacy and security misconfigurations",
+      "Build an interactive legal agreement generation portal with rule-based conditional clauses in Python",
+      "Design an enterprise Data Governance catalog and classification policy for GDPR/CCPA data pipelines"
+    ]
+  },
+  {
+    "id": "bridge-legal-to-healthcare",
+    "source_domain": "legal",
+    "target_domain": "healthcare",
+    "transferable_strengths": [
+      "Deep comprehension of federal healthcare statutes (HIPAA, Stark Law, Anti-Kickback)",
+      "Institutional risk assessment, patient advocacy & liability mitigation",
+      "Clinical policy drafting, provider credentialing oversight & audit defense",
+      "Dispute resolution, medical ethics evaluation & informed consent procedures"
+    ],
+    "bridge_certifications": [
+      "CHC (Certified in Healthcare Compliance - HCCA)",
+      "CHPC (Certified in Healthcare Privacy Compliance)",
+      "CPHRM (Certified Professional in Healthcare Risk Management)",
+      "HIPAA Compliance Officer Professional Certification"
+    ],
+    "strategic_advice": "Position legal research and compliance background as hospital risk management and regulatory compliance directorship. Highlight contract negotiation experience as expertise in physician employment agreements, medical vendor MSAs, and insurance payer contracts.",
+    "recommended_projects": [
+      "Draft a hospital-wide HIPAA Privacy & Security incident response plan with root-cause breach notification workflows",
+      "Create an audit checklist and risk assessment matrix for physician referral arrangements under the Stark Law and Anti-Kickback Statute",
+      "Build a patient informed consent and clinical trial compliance tracking repository"
+    ]
+  },
+  {
+    "id": "bridge-legal-to-finance",
+    "source_domain": "legal",
+    "target_domain": "finance",
+    "transferable_strengths": [
+      "Regulatory compliance & securities law oversight (SEC, Dodd-Frank, FINRA)",
+      "Mergers & Acquisitions (M&A) due diligence, debt covenants & equity structuring",
+      "Anti-Money Laundering (AML), KYC verification & financial fraud mitigation",
+      "Fiduciary duty governance, corporate resolutions & board reporting"
+    ],
+    "bridge_certifications": [
+      "CAMS (Certified Anti-Money Laundering Specialist - ACAMS)",
+      "FINRA Series 7 & Series 63 (General Securities Representative)",
+      "CFE (Certified Fraud Examiner)",
+      "Certified Regulatory and Compliance Professional (CRCP - FINRA)"
+    ],
+    "strategic_advice": "Position corporate and contract legal experience as M&A transaction due diligence, financial regulatory affairs, and AML/KYC compliance. Frame legal risk analysis as credit risk and contractual default mitigation.",
+    "recommended_projects": [
+      "Perform a simulated M&A due diligence legal and debt covenant review on public SEC 10-K filings for two merging firms",
+      "Draft an institutional Anti-Money Laundering (AML) risk assessment framework covering high-risk wire transactions",
+      "Create a corporate governance board pack analyzing shareholder rights and fiduciary liability"
+    ]
+  },
+  {
+    "id": "bridge-legal-to-trades",
+    "source_domain": "legal",
+    "target_domain": "trades",
+    "transferable_strengths": [
+      "Construction contract administration (AIA forms, change orders, liquidated damages)",
+      "OSHA workplace safety statutory compliance & worker compensation mitigation",
+      "Zoning, permitting, land use regulations & municipal code enforcement",
+      "Mechanics liens, subcontractor payment disputes & delay claims litigation"
+    ],
+    "bridge_certifications": [
+      "OSHA 30-Hour Construction Safety Certification",
+      "RICS Certificate in Construction Contract Administration",
+      "LEED Green Associate (U.S. Green Building Council)",
+      "Certified Construction Contract Administrator (CCCA - CSI)"
+    ],
+    "strategic_advice": "Highlight construction law and contract dispute experience as commercial construction management, claims consulting, and OSHA safety compliance advisory. Frame contract enforcement as proactive project controls.",
+    "recommended_projects": [
+      "Draft an AIA A201 General Conditions contract risk matrix identifying subcontractor indemnity and retainage pitfalls",
+      "Build a municipal permitting and zoning variance application package for a commercial development",
+      "Develop a comprehensive OSHA jobsite hazard safety inspection protocol and audit checklist"
+    ]
+  },
+  {
+    "id": "bridge-healthcare-to-tech",
+    "source_domain": "healthcare",
+    "target_domain": "tech",
+    "transferable_strengths": [
+      "Clinical workflow comprehension & medical terminology",
+      "Rigorous HIPAA & PHI regulatory compliance",
+      "High-pressure triage and critical incident management",
+      "Electronic Health Record (EHR) data entry and system testing"
+    ],
+    "bridge_certifications": [
+      "CAHIMS / CPHIMS (HIMSS Certified Healthcare Information and Management Systems)",
+      "AWS Certified Cloud Practitioner",
+      "CompTIA Security+",
+      "Epic Systems Certification"
+    ],
+    "strategic_advice": "Position clinical triage experience as real-time root-cause analysis and systems monitoring. Frame EHR charting experience as structured database entry and user acceptance testing.",
+    "recommended_projects": [
+      "Build a FHIR/HL7-compliant patient intake dashboard using FastAPI and React",
+      "Create an automated HIPAA compliance audit script checking database encryption",
+      "Design an AI clinical triage decision-tree workflow with symptom validation"
+    ]
+  },
+  {
+    "id": "bridge-healthcare-to-legal",
+    "source_domain": "healthcare",
+    "target_domain": "legal",
+    "transferable_strengths": [
+      "Clinical chart analysis, medical record auditing & deviation identification",
+      "Deep understanding of medical standard-of-care, negligence & causation",
+      "Medical terminology translation for lay juries and attorneys",
+      "Medication administration records, surgical operative reports & pathology review"
+    ],
+    "bridge_certifications": [
+      "ALNCC (Certified Legal Nurse Consultant - AALNC)",
+      "Certified Professional in Healthcare Risk Management (CPHRM)",
+      "Paralegal Certificate (ABA Approved)",
+      "Certified Medical Record Review Specialist"
+    ],
+    "strategic_advice": "Position clinical nursing or physician background as expert Medical Malpractice Consulting, Personal Injury case assessment, and Toxic Tort causation analysis. Emphasize ability to spot altered medical records and breaches in nursing standard of care.",
+    "recommended_projects": [
+      "Prepare a comprehensive Legal Nurse Consultant chronologically organized medical summary with standard-of-care breach analysis",
+      "Draft a mock interrogatory question list for a medical malpractice surgical complication deposition",
+      "Audit a 50-page redacted hospital medical record set identifying documentation gaps and contradictory vital signs"
+    ]
+  },
+  {
+    "id": "bridge-healthcare-to-finance",
+    "source_domain": "healthcare",
+    "target_domain": "finance",
+    "transferable_strengths": [
+      "Understanding clinical resource consumption, bedside staffing & ICU bed costs",
+      "Clinical documentation improvement (CDI) and billing code capture (ICD-10, CPT, DRGs)",
+      "Healthcare quality metrics, value-based care reimbursement formulas & MACRA/MIPS",
+      "Patient length-of-stay reduction and medical supply chain inventory management"
+    ],
+    "bridge_certifications": [
+      "CHFP (Certified Healthcare Financial Professional - HFMA)",
+      "CRCR (Certified Revenue Cycle Representative - HFMA)",
+      "CPC (Certified Professional Coder - AAPC)",
+      "FHFMA (Fellow of the Healthcare Financial Management Association)"
+    ],
+    "strategic_advice": "Highlight clinical background as specialized insight into hospital revenue cycle management, DRG reimbursement maximization, and clinical cost center budgeting. Frame clinical documentation as financial revenue protection.",
+    "recommended_projects": [
+      "Build a hospital department budget model calculating cost per patient day, nursing staffing ratios, and supply overhead",
+      "Conduct a Revenue Cycle denial analysis dashboard identifying top claim rejection codes and revenue recovery opportunities",
+      "Evaluate the financial impact of shifting from Fee-For-Service to Value-Based Care bundled payments for orthopedic procedures"
+    ]
+  },
+  {
+    "id": "bridge-healthcare-to-trades",
+    "source_domain": "healthcare",
+    "target_domain": "trades",
+    "transferable_strengths": [
+      "Intimate familiarity with clinical diagnostic hardware (vital monitors, infusion pumps, defibs)",
+      "Sterile processing protocols, infection control & hazardous medical waste safety",
+      "Understanding hospital electrical emergency backup systems and patient room circuits",
+      "Methodical diagnostic troubleshooting under high-stakes clinical urgency"
+    ],
+    "bridge_certifications": [
+      "CBET (Certified Biomedical Equipment Technician - AAMI)",
+      "ASHE CHFM (Certified Healthcare Facility Manager)",
+      "OSHA 10-Hour General Industry Safety Certification",
+      "EPA Section 608 Universal Certification (Medical refrigeration/chillers)"
+    ],
+    "strategic_advice": "Position clinical familiarity with medical hardware as Biomedical Equipment Technician (BMET) calibration, preventive maintenance, and hospital plant operations expertise. Emphasize strict adherence to JCAHO and infection control standards.",
+    "recommended_projects": [
+      "Draft a hospital preventive maintenance and electrical safety inspection protocol for patient-connected medical devices",
+      "Conduct a simulated biomedical troubleshooting workflow isolating power supply failure in an infusion pump",
+      "Create a hospital air pressure and HEPA filtration audit checklist for negative pressure isolation rooms"
+    ]
+  },
+  {
+    "id": "bridge-finance-to-tech",
+    "source_domain": "finance",
+    "target_domain": "tech",
+    "transferable_strengths": [
+      "Quantitative data modeling & statistical reconciliation",
+      "Advanced Excel, relational data manipulation & mathematical logic",
+      "Cost-benefit analysis, capital budgeting & ROI forecasting",
+      "Regulatory reporting (SEC/GAAP) & auditing accuracy"
+    ],
+    "bridge_certifications": [
+      "FinOps Certified Practitioner (Linux Foundation)",
+      "AWS Certified Data Engineer - Associate",
+      "Microsoft Certified: Power BI Data Analyst Associate",
+      "Python for Data Science Professional Certificate"
+    ],
+    "strategic_advice": "Highlight DCF and financial modeling expertise as algorithmic data analysis. Position capital allocation experience as cloud cost optimization (FinOps) and quantitative engineering.",
+    "recommended_projects": [
+      "Build an automated algorithmic stock/portfolio tracking dashboard using Python Pandas and Plotly",
+      "Create an AWS cloud infrastructure cost forecast model using AWS Cost Explorer API",
+      "Design an automated financial reconciliation pipeline verifying transactions between two ledger databases"
+    ]
+  },
+  {
+    "id": "bridge-finance-to-legal",
+    "source_domain": "finance",
+    "target_domain": "legal",
+    "transferable_strengths": [
+      "Forensic financial analysis, ledger reconciliation & asset tracing",
+      "Business valuation methodologies (DCF, Market Comps, Asset-Based) for litigation",
+      "Understanding financial fraud schemes (Ponzi, embezzlement, transfer pricing)",
+      "Reviewing commercial loan agreements, indentures & equity covenant compliance"
+    ],
+    "bridge_certifications": [
+      "CFE (Certified Fraud Examiner - ACFE)",
+      "CFF (Certified in Financial Forensics - AICPA)",
+      "CAMS (Certified Anti-Money Laundering Specialist)",
+      "Paralegal Certificate (Corporate & Securities Law)"
+    ],
+    "strategic_advice": "Position accounting and finance background as Forensic Accounting, expert witness financial testimony, white-collar crime investigations, and bankruptcy debtor analysis. Frame valuation modeling as expert calculation of commercial damages.",
+    "recommended_projects": [
+      "Draft a mock forensic accounting report tracing commingled bank account assets in a simulated corporate embezzlement scheme",
+      "Calculate lost profit commercial litigation damages using a DCF model with discount rate sensitivity defense",
+      "Audit a commercial loan agreement portfolio identifying covenant breach triggers and collateral liquidation rights"
+    ]
+  },
+  {
+    "id": "bridge-finance-to-healthcare",
+    "source_domain": "finance",
+    "target_domain": "healthcare",
+    "transferable_strengths": [
+      "Capital allocation, operating margin management & variance analysis",
+      "Payer contract modeling, fee schedule negotiations & reimbursement forecasting",
+      "Healthcare capital expenditure budgeting (MRI machines, surgical robotics, facility wings)",
+      "Audit compliance, internal financial controls & Sarbanes-Oxley oversight"
+    ],
+    "bridge_certifications": [
+      "CHFP (Certified Healthcare Financial Professional - HFMA)",
+      "FHFMA (Fellow of Healthcare Financial Management Association)",
+      "CRCR (Certified Revenue Cycle Representative)",
+      "CPHIMS (Health Information & Management Systems)"
+    ],
+    "strategic_advice": "Frame corporate FP&A and financial modeling as hospital operating budget management, physician group practice revenue cycle optimization, and health system capital planning. Emphasize experience maintaining profitable operating margins under regulatory caps.",
+    "recommended_projects": [
+      "Build an integrated 3-statement hospital financial forecast incorporating Medicare reimbursement cuts and nurse staffing overtime",
+      "Model an ROI capital acquisition proposal for a $2.5M robotic surgery system factoring procedure volume and insurance payer mix",
+      "Analyze hospital revenue cycle bottlenecks to reduce Days in Accounts Receivable (A/R) from 52 to 38 days"
+    ]
+  },
+  {
+    "id": "bridge-finance-to-trades",
+    "source_domain": "finance",
+    "target_domain": "trades",
+    "transferable_strengths": [
+      "Quantitative cost estimation, bill of quantities (BOQ) analysis & budget controls",
+      "Cash flow timing, progress billing (AIA G702/G703) & contractor retainage management",
+      "Vendor contract negotiations, bulk materials procurement & margin defense",
+      "Equipment lifecycle costing, depreciation schedules & lease vs buy decisions"
+    ],
+    "bridge_certifications": [
+      "ASPE Certified Professional Estimator (CPE)",
+      "Certified Cost Professional (CCP - AACE International)",
+      "OSHA 10-Hour Construction Safety Certification",
+      "Procore Certified: Project Manager (Financial Management)"
+    ],
+    "strategic_advice": "Position financial analysis background as Construction Cost Estimator, Senior Project Controller, and Commercial Equipment Fleet Operations Manager. Frame financial modeling as accurate job costing and bid markup strategy that protects gross margins.",
+    "recommended_projects": [
+      "Build a detailed commercial building construction cost estimate with labor unit rates, equipment rental, and material takeoffs",
+      "Design an automated cash flow schedule for a multi-million-dollar construction contract tracking monthly AIA billing milestones",
+      "Conduct a heavy equipment fleet lifecycle cost analysis comparing equipment lease vs purchase with residual value recovery"
+    ]
+  },
+  {
+    "id": "bridge-trades-to-tech",
+    "source_domain": "trades",
+    "target_domain": "tech",
+    "transferable_strengths": [
+      "Schematic reading & circuit blueprint troubleshooting",
+      "Physical layer networking, structured cabling & rack mounting",
+      "Rigorous safety protocol compliance (OSHA/LOTO)",
+      "Hardware fault isolation and field diagnostic methodology"
+    ],
+    "bridge_certifications": [
+      "CompTIA Network+",
+      "CompTIA A+ or Linux+",
+      "Cisco Certified Network Associate (CCNA)",
+      "AWS Certified Cloud Practitioner"
+    ],
+    "strategic_advice": "Highlight physical infrastructure, cabling, and power distribution experience as direct transferable foundations for Data Center Operations, Site Reliability Engineering (SRE), and IoT hardware maintenance.",
+    "recommended_projects": [
+      "Build a Raspberry Pi environment monitoring node transmitting temperature/power telemetry to AWS",
+      "Configure a home lab network with segmented VLANs and Linux server provisioning",
+      "Design a physical server rack layout with power distribution (PDU), UPS load calculations, and structured cable patch labeling"
+    ]
+  },
+  {
+    "id": "bridge-trades-to-legal",
+    "source_domain": "trades",
+    "target_domain": "legal",
+    "transferable_strengths": [
+      "Building code compliance (IBC, NEC, NFPA) & construction defect identification",
+      "On-site workplace accident investigation & OSHA regulation enforcement",
+      "Blueprint interpretation, architectural specifications review & as-built audits",
+      "Hands-on mechanical failure analysis (HVAC pipe burst, structural weld failure)"
+    ],
+    "bridge_certifications": [
+      "Certified Safety Professional (CSP - BCSP)",
+      "OSHA 500 Authorized Construction Trainer",
+      "ICC Certified Building Inspector (International Code Council)",
+      "Paralegal Certificate (Construction & Regulatory Litigation)"
+    ],
+    "strategic_advice": "Position master technician or foreman experience as Expert Witness Construction Defect Consulting, OSHA regulatory safety defense, and building code violation analysis. Emphasize credibility testifying on real-world craftsmanship standards and jobsite conditions.",
+    "recommended_projects": [
+      "Prepare a construction defect expert report documenting roof flashing and moisture barrier failure causing water intrusion",
+      "Draft an OSHA workplace accident investigation report with root-cause analysis and citation contestation defenses",
+      "Audit a commercial architectural blueprint set against National Electrical Code (NEC) clearance mandates for a zoning hearing"
+    ]
+  },
+  {
+    "id": "bridge-trades-to-healthcare",
+    "source_domain": "trades",
+    "target_domain": "healthcare",
+    "transferable_strengths": [
+      "Commercial HVAC, central chiller plants & air filtration systems maintenance",
+      "Emergency backup generator maintenance & automatic transfer switch (ATS) testing",
+      "Plumbing, medical gas piping (oxygen, vacuum, nitrous) & backflow prevention",
+      "Rigorous adherence to life safety codes (NFPA 99 Healthcare Facilities Code, NFPA 101)"
+    ],
+    "bridge_certifications": [
+      "ASHE CHFM (Certified Healthcare Facility Manager)",
+      "EPA Section 608 Universal Certification",
+      "ASSE 6010 Medical Gas System Installer / Maintenance Certification",
+      "OSHA 30-Hour General Industry Safety Certification"
+    ],
+    "strategic_advice": "Position commercial electrical, plumbing, or HVAC background as Hospital Facilities Engineer, Central Plant Operations Manager, and Medical Gas Specialist. Emphasize compliance with Life Safety Code NFPA 99/101 and Joint Commission (JCAHO) hospital physical plant inspections.",
+    "recommended_projects": [
+      "Draft a hospital emergency power generation maintenance and weekly load bank testing protocol complying with NFPA 110",
+      "Design a preventive maintenance and leak detection schedule for hospital medical gas piped systems (NFPA 99)",
+      "Create an Infection Control Risk Assessment (ICRA) containment plan for plumbing or HVAC maintenance in an active patient ward"
+    ]
+  },
+  {
+    "id": "bridge-trades-to-finance",
+    "source_domain": "trades",
+    "target_domain": "finance",
+    "transferable_strengths": [
+      "Hands-on understanding of real labor productivity rates & material takeoff quantities",
+      "Commercial subcontracting bidding, job costing & margin realization",
+      "Equipment operational efficiency, maintenance costs & capital depreciation",
+      "Project milestone delivery, scope-creep identification & change-order defense"
+    ],
+    "bridge_certifications": [
+      "ASPE Certified Professional Estimator (CPE)",
+      "Certified Cost Professional (CCP - AACE International)",
+      "Project Management Professional (PMP - PMI)",
+      "Procore Certified: Construction Financials"
+    ],
+    "strategic_advice": "Position trade craftsmanship and foreman background as Construction Cost Estimator, Capital Project Auditor, and Real Estate Development Feasibility Analyst. Frame real jobsite experience as the ultimate defense against unrealistic contractor budget overruns and scope creep.",
+    "recommended_projects": [
+      "Build a complete trade-specific cost estimation model in Excel cross-referencing RSMeans labor hours and bulk supplier material pricing",
+      "Audit a commercial contractor's pay application (AIA G702) verifying percentage of completion against on-site physical progress",
+      "Conduct a capital equipment replacement ROI model comparing rebuilding a commercial chiller vs installing a variable-refrigerant-flow system"
+    ]
+  }
+]

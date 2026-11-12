@@ -102,7 +102,7 @@ export default function Home() {
                             {results.status === 'domain_mismatch' ? (
                                 <DomainMismatchCard result={results} />
                             ) : results.status === 'unparseable_jd' ? (
-                                <UnparseableJdCard message={results.message} onEditJd={handleEditJobDescription} />
+                                <UnparseableJdCard onEditJd={handleEditJobDescription} />
                             ) : (
                                 <>
                                     {(results.lowConfidence || results.low_confidence) && (
@@ -126,16 +126,38 @@ export default function Home() {
 
                                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-8">
                                         <div className="lg:col-span-4 space-y-8 sticky top-8 self-start">
-                                            <ScoreCard score={results.overallScore ?? results.overall_score} breakdown={results.scoreBreakdown || results.score_breakdown} />
+                                            <ScoreCard 
+                                                score={results.overallScore ?? results.overall_score} 
+                                                breakdown={results.scoreBreakdown || results.score_breakdown} 
+                                                seniorityReason={results.seniorityReason || results.seniority_reason}
+                                                seniorityStatus={results.seniorityStatus || results.seniority_status}
+                                                lowConfidence={results.lowConfidence ?? results.low_confidence}
+                                            />
                                             <SkillGapList gaps={results.skillGaps || results.skill_gaps} />
                                             <StrengthList strengths={results.strengths} />
                                         </div>
 
                                         <div className="lg:col-span-8 space-y-8">
-                                            <ExecutiveSummary summary={results.executiveSummary || results.executive_summary} />
-                                            <FrictionVisualization points={results.frictionPoints || results.friction_points} />
-                                            <ATSOptimizationTips tips={results.atsOptimization || results.atsOptimizationTips || results.ats_optimization} />
-                                            <SeniorityAlignment alignment={results.seniorityAnalysis || results.seniorityAlignment || results.seniority_analysis} />
+                                            {(() => {
+                                                const degradedList = results.degradedSections || results.degraded_sections || [];
+                                                return (
+                                                    <>
+                                                        <ExecutiveSummary 
+                                                            summary={results.executiveSummary || results.executive_summary} 
+                                                            isDegraded={degradedList.includes('executive_summary')}
+                                                        />
+                                                        <FrictionVisualization points={results.frictionPoints || results.friction_points} />
+                                                        <ATSOptimizationTips 
+                                                            tips={results.atsOptimization || results.atsOptimizationTips || results.ats_optimization} 
+                                                            isDegraded={degradedList.includes('ats_optimization')}
+                                                        />
+                                                        <SeniorityAlignment 
+                                                            alignment={results.seniorityAnalysis || results.seniorityAlignment || results.seniority_analysis} 
+                                                            isDegraded={degradedList.includes('seniority_alignment')}
+                                                        />
+                                                    </>
+                                                );
+                                            })()}
                                         </div>
                                     </div>
                                     

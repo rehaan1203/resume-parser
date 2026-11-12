@@ -24,33 +24,49 @@ class LinkProcessor:
         # Validate all links
         urls = [item["url"] for item in links_with_context]
         validation_results = await self.validator.validate_many(urls)
-        
-        # Process each link
-        replacements = {}
+
+        import asyncio
+        replacements: Dict[str, str] = {}
+        broken_items = []
         for item in links_with_context:
             url = item["url"]
-            topic = item.get("topic", "")
-            link_type = item.get("type", "resource")
-            
             result = validation_results.get(url, {})
-            
             if self.should_replace_link(result):
-                # Link is broken, find replacement
-                replacement = await self.replacer.find_replacement(url, topic, link_type)
+                if url not in replacements:
+                    broken_items.append(item)
+            elif result.get("final_url") and result["final_url"] != url:
+                replacements[url] = result["final_url"]
+                logger.info(f"Updated redirect: {url} → {result['final_url']}")
+
+        if broken_items:
+            sem = asyncio.Semaphore(4)
+
+            async def _resolve_broken(item: Dict[str, Any]):
+                url = item["url"]
+                topic = item.get("topic", "")
+                link_type = item.get("type", "resource")
+                async with sem:
+                    replacement = await self.replacer.find_replacement(url, topic, link_type)
                 if replacement:
-                    replacements[url] = replacement
-                    logger.info(f"Replaced broken link: {url} → {replacement}")
+                    return url, replacement, False
+                canonical = self.replacer.synthesize_canonical_search_url(topic, link_type)
+                return url, canonical, True
+
+            seen_broken = {}
+            unique_broken = []
+            for item in broken_items:
+                if item["url"] not in seen_broken:
+                    seen_broken[item["url"]] = True
+                    unique_broken.append(item)
+
+            resolved = await asyncio.gather(*(_resolve_broken(it) for it in unique_broken))
+            for url, target_url, is_canonical in resolved:
+                replacements[url] = target_url
+                if is_canonical:
+                    logger.info(f"Synthesized canonical fallback link: {url} -> {target_url}")
                 else:
-                    # Remove the link entirely (we'll mark it for removal)
-                    replacements[url] = None
-                    logger.warning(f"No replacement found for: {url}")
-            else:
-                # Link is valid, keep it
-                if result.get("final_url") and result["final_url"] != url:
-                    # Link was redirected, update it
-                    replacements[url] = result["final_url"]
-                    logger.info(f"Updated redirect: {url} → {result['final_url']}")
-        
+                    logger.info(f"Replaced broken link: {url} → {target_url}")
+
         # Apply replacements to the response
         return self._apply_replacements(response, replacements)
 

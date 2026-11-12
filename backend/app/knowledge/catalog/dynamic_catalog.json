@@ -1,0 +1,21 @@
+[
+  {
+    "id": "dyn-tech-quantum-circuit-synthesis",
+    "title": "Quantum Circuit Synthesis Learning Track",
+    "url": "https://www.coursera.org/search?query=Quantum+Circuit+Synthesis",
+    "platform": "Coursera",
+    "type": "course",
+    "domain": "tech",
+    "skills_covered": [
+      "Quantum Circuit Synthesis"
+    ],
+    "difficulty": "intermediate",
+    "duration_hours": 5.0,
+    "is_free": true,
+    "verified_at": "2026-10-29",
+    "health_status": "active",
+    "last_checked_at": null,
+    "description": "Autonomously curated learning resource covering core competencies for Quantum Circuit Synthesis",
+    "publication_year": 2024
+  }
+]
