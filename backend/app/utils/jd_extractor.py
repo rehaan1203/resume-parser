@@ -4,6 +4,7 @@ from typing import Optional, Dict, List
 from bs4 import BeautifulSoup
 import re
 from app.utils.logger import logger
+from app.utils.security import validate_public_http_url
 
 class JDExtractor:
     """Extract job description from various job board URLs."""
@@ -23,13 +24,22 @@ class JDExtractor:
     
     async def extract(self, url: str) -> Optional[Dict[str, any]]:
         """Extract job description from URL."""
+        validate_public_http_url(url)
+
+        async def _guard_redirect(request: httpx.Request) -> None:
+            validate_public_http_url(str(request.url))
+
         try:
             # Identify job board
             board = self._identify_board(url)
             logger.info(f"Extracting JD from {board or 'unknown'} board: {url}")
-            
-            # Fetch HTML
-            async with httpx.AsyncClient(timeout=15.0, follow_redirects=True) as client:
+
+            # Fetch HTML with per-hop SSRF validation across redirects
+            async with httpx.AsyncClient(
+                timeout=15.0,
+                follow_redirects=True,
+                event_hooks={"request": [_guard_redirect]},
+            ) as client:
                 response = await client.get(url)
                 if response.status_code != 200:
                     logger.error(f"Failed to fetch URL: {response.status_code}")
@@ -60,6 +70,8 @@ class JDExtractor:
                 
                 return result
                     
+        except ValueError:
+            raise
         except Exception as e:
             logger.error(f"JD extraction failed: {e}")
             return None

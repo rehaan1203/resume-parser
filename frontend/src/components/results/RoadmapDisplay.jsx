@@ -1,12 +1,15 @@
 'use client';
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Calendar, ExternalLink, ChevronDown, Map, Compass } from 'lucide-react';
+import { Calendar, ExternalLink, ChevronDown, Map, Compass, Clock, Video, BookOpen, Filter } from 'lucide-react';
 import { Card } from '../shared/Card';
+import { VerifiedResourceCard } from './VerifiedResourceCard';
 import { cn } from '../../utils/cn';
 
 export const RoadmapDisplay = ({ roadmap }) => {
     const [expandedSections, setExpandedSections] = useState([1]);
+    const [filterPacing, setFilterPacing] = useState('all'); // all, part_time (<=10h), intensive (>10h)
+    const [filterFormat, setFilterFormat] = useState('all'); // all, video, docs
     
     if (!roadmap) return null;
 
@@ -30,6 +33,8 @@ export const RoadmapDisplay = ({ roadmap }) => {
         }
     }
 
+    const architecture_diagrams = data?.architecture_diagrams || roadmap?.architecture_diagrams || [];
+
     const renderHeader = (title, icon) => (
         <div className="flex items-center gap-3 border-b border-zinc-200 dark:border-zinc-800 pb-4">
             {icon}
@@ -37,17 +42,205 @@ export const RoadmapDisplay = ({ roadmap }) => {
         </div>
     );
 
-    const renderResources = (resources) => (
-        resources && resources.length > 0 && (
-            <div className="flex flex-wrap gap-2 mt-2">
-                {resources.map((res, rIdx) => (
-                    <a key={rIdx} href={res.startsWith('http') ? res : `https://google.com/search?q=${res}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center text-xs px-2 py-1 bg-zinc-200/80 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 rounded hover:bg-zinc-300 dark:hover:bg-zinc-700 transition-colors border border-zinc-300 dark:border-zinc-700">
-                        {res.substring(0, 30)}{res.length > 30 ? '...' : ''} <ExternalLink className="w-3 h-3 ml-1"/>
-                    </a>
+    const getResourceType = (res) => {
+        if (!res) return 'docs';
+        if (typeof res === 'object') {
+            const type = (res.type || '').toLowerCase();
+            if (['youtube_video', 'video'].includes(type) || res.url?.includes('youtube.com') || res.url?.includes('youtu.be')) {
+                return 'video';
+            }
+            if (type === 'certification') return 'certification';
+            return 'docs';
+        }
+        const str = String(res).toLowerCase();
+        if (str.includes('youtube.com') || str.includes('youtu.be') || str.includes('vimeo') || str.includes('watch?v=') || str.includes('video')) {
+            return 'video';
+        }
+        if (str.includes('cert') || str.includes('exam')) {
+            return 'certification';
+        }
+        return 'docs';
+    };
+
+    const getResourceDuration = (res) => {
+        if (typeof res === 'object' && typeof res.duration_hours === 'number') {
+            return res.duration_hours;
+        }
+        const type = getResourceType(res);
+        return type === 'certification' ? 15 : (type === 'video' ? 1.5 : 3.0);
+    };
+
+    // Helper to extract all resources across any roadmap format for counts
+    const extractAllResources = () => {
+        let list = [];
+        if (isLegacy && Array.isArray(roadmap)) {
+            roadmap.forEach(i => { if (i?.resources) list.push(...i.resources); });
+        } else if (data) {
+            if (data.days) {
+                data.days.forEach(d => { if (d?.resources) list.push(...d.resources); });
+            }
+            if (data.weeks) {
+                data.weeks.forEach(w => {
+                    (w.days || w.activities || []).forEach(d => { if (d?.resources) list.push(...d.resources); });
+                });
+            }
+            if (data.months) {
+                data.months.forEach(m => {
+                    (m.activities || []).forEach(a => { if (a?.resources) list.push(...a.resources); });
+                });
+            }
+            if (data.phases) {
+                data.phases.forEach(p => { if (p?.resources) list.push(...p.resources); });
+            }
+        }
+        return list;
+    };
+
+    const allResources = extractAllResources();
+    const videoCount = allResources.filter(r => getResourceType(r) === 'video').length;
+    const docsCount = allResources.filter(r => getResourceType(r) === 'docs').length;
+    const partTimeCount = allResources.filter(r => getResourceDuration(r) <= 10).length;
+    const intensiveCount = allResources.filter(r => getResourceDuration(r) > 10).length;
+
+    const renderFilterControls = () => (
+        <div className="flex flex-wrap items-center gap-3 pt-2 pb-1 text-xs text-zinc-600 dark:text-zinc-400">
+            <span className="flex items-center gap-1.5 font-semibold text-zinc-800 dark:text-zinc-200">
+                <Filter className="w-3.5 h-3.5 text-violet-500" />
+                Customize:
+            </span>
+            <div className="flex items-center gap-1 bg-zinc-200/70 dark:bg-zinc-800 p-1 rounded-lg border border-zinc-300/80 dark:border-zinc-700">
+                <button
+                    type="button"
+                    onClick={() => setFilterPacing('all')}
+                    className={cn(
+                        "px-2.5 py-1 rounded-md transition-all font-medium",
+                        filterPacing === 'all'
+                            ? "bg-violet-600 text-white shadow-sm font-semibold"
+                            : "text-zinc-700 dark:text-zinc-300 hover:text-zinc-950 dark:hover:text-white"
+                    )}
+                >
+                    All Pacing
+                </button>
+                <button
+                    type="button"
+                    onClick={() => setFilterPacing('part_time')}
+                    className={cn(
+                        "flex items-center gap-1.5 px-2.5 py-1 rounded-md transition-all font-medium",
+                        filterPacing === 'part_time'
+                            ? "bg-violet-600 text-white shadow-sm font-semibold"
+                            : "text-zinc-700 dark:text-zinc-300 hover:text-zinc-950 dark:hover:text-white"
+                    )}
+                >
+                    <Clock className="w-3 h-3 text-emerald-400" />
+                    Part-Time (≤10h)
+                    {partTimeCount > 0 && <span className="text-[10px] opacity-80 px-1 py-0.2 rounded bg-black/20 dark:bg-white/20">{partTimeCount}</span>}
+                </button>
+                <button
+                    type="button"
+                    onClick={() => setFilterPacing('intensive')}
+                    className={cn(
+                        "flex items-center gap-1.5 px-2.5 py-1 rounded-md transition-all font-medium",
+                        filterPacing === 'intensive'
+                            ? "bg-violet-600 text-white shadow-sm font-semibold"
+                            : "text-zinc-700 dark:text-zinc-300 hover:text-zinc-950 dark:hover:text-white"
+                    )}
+                >
+                    <Clock className="w-3 h-3 text-amber-400" />
+                    Intensive (&gt;10h)
+                    {intensiveCount > 0 && <span className="text-[10px] opacity-80 px-1 py-0.2 rounded bg-black/20 dark:bg-white/20">{intensiveCount}</span>}
+                </button>
+            </div>
+
+            <div className="flex items-center gap-1 bg-zinc-200/70 dark:bg-zinc-800 p-1 rounded-lg border border-zinc-300/80 dark:border-zinc-700">
+                <button
+                    type="button"
+                    onClick={() => setFilterFormat('all')}
+                    className={cn(
+                        "px-2.5 py-1 rounded-md transition-all font-medium",
+                        filterFormat === 'all'
+                            ? "bg-violet-600 text-white shadow-sm font-semibold"
+                            : "text-zinc-700 dark:text-zinc-300 hover:text-zinc-950 dark:hover:text-white"
+                    )}
+                >
+                    All Formats
+                </button>
+                <button
+                    type="button"
+                    onClick={() => setFilterFormat('video')}
+                    className={cn(
+                        "flex items-center gap-1.5 px-2.5 py-1 rounded-md transition-all font-medium",
+                        filterFormat === 'video'
+                            ? "bg-violet-600 text-white shadow-sm font-semibold"
+                            : "text-zinc-700 dark:text-zinc-300 hover:text-zinc-950 dark:hover:text-white"
+                    )}
+                >
+                    <Video className="w-3 h-3 text-red-400" />
+                    Video-First
+                    {videoCount > 0 && <span className="text-[10px] opacity-80 px-1 py-0.2 rounded bg-black/20 dark:bg-white/20">{videoCount}</span>}
+                </button>
+                <button
+                    type="button"
+                    onClick={() => setFilterFormat('docs')}
+                    className={cn(
+                        "flex items-center gap-1.5 px-2.5 py-1 rounded-md transition-all font-medium",
+                        filterFormat === 'docs'
+                            ? "bg-violet-600 text-white shadow-sm font-semibold"
+                            : "text-zinc-700 dark:text-zinc-300 hover:text-zinc-950 dark:hover:text-white"
+                    )}
+                >
+                    <BookOpen className="w-3 h-3 text-blue-400" />
+                    Documentation
+                    {docsCount > 0 && <span className="text-[10px] opacity-80 px-1 py-0.2 rounded bg-black/20 dark:bg-white/20">{docsCount}</span>}
+                </button>
+            </div>
+        </div>
+    );
+
+    const renderResources = (resources) => {
+        if (!resources || resources.length === 0) return null;
+        const filtered = resources.filter(res => {
+            const resType = getResourceType(res);
+            const duration = getResourceDuration(res);
+
+            // Format filtering
+            if (filterFormat === 'video' && resType !== 'video') return false;
+            if (filterFormat === 'docs' && resType !== 'docs') return false;
+
+            // Pacing filtering
+            if (filterPacing === 'part_time' && duration > 10) return false;
+            if (filterPacing === 'intensive' && duration <= 10) return false;
+
+            return true;
+        });
+
+        if (filtered.length === 0) {
+            return (
+                <div className="flex items-center gap-2 py-1 px-2.5 mt-2 rounded bg-zinc-100/60 dark:bg-zinc-800/40 border border-zinc-200/50 dark:border-zinc-800/50 text-[11px] text-zinc-400 dark:text-zinc-500 italic">
+                    {filterFormat === 'video' ? (
+                        <>
+                            <BookOpen className="w-3 h-3 text-blue-400 shrink-0" />
+                            <span>{resources.length} documentation guide{resources.length > 1 ? 's' : ''} hidden by Video-First filter</span>
+                        </>
+                    ) : filterFormat === 'docs' ? (
+                        <>
+                            <Video className="w-3 h-3 text-red-400 shrink-0" />
+                            <span>{resources.length} video tutorial{resources.length > 1 ? 's' : ''} hidden by Documentation filter</span>
+                        </>
+                    ) : (
+                        <span>Hidden by {filterPacing} pacing filter</span>
+                    )}
+                </div>
+            );
+        }
+
+        return (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mt-3">
+                {filtered.map((res, rIdx) => (
+                    <VerifiedResourceCard key={rIdx} resource={res} />
                 ))}
             </div>
-        )
-    );
+        );
+    };
 
     // ==========================================
     // LEGACY / 30 DAY RENDERER
@@ -78,7 +271,36 @@ export const RoadmapDisplay = ({ roadmap }) => {
 
         return (
             <div className="mt-12 space-y-6">
-                {renderHeader((roadmap.title || "30-Day Learning Roadmap").replace(/[^\x00-\x7F]/g, "").trim(), <Calendar className="w-6 h-6 text-zinc-900 dark:text-zinc-100"/>)}
+                <div className="space-y-3 border-b border-zinc-200 dark:border-zinc-800 pb-4">
+                    <div className="flex items-center gap-3">
+                        <Calendar className="w-6 h-6 text-zinc-900 dark:text-zinc-100"/>
+                        <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
+                            {(roadmap.title || "30-Day Learning Roadmap").replace(/[^\x00-\x7F]/g, "").trim()}
+                        </h2>
+                    </div>
+                    {renderFilterControls()}
+                </div>
+
+                {/* Multi-Modal Architecture & Conceptual Diagrams */}
+                {architecture_diagrams && architecture_diagrams.length > 0 && (
+                    <div className="p-4 rounded-xl border border-blue-200/80 dark:border-blue-900/60 bg-blue-50/40 dark:bg-blue-950/20 mb-6">
+                        <div className="flex items-center gap-2 mb-2 text-blue-800 dark:text-blue-300 font-semibold text-sm">
+                            <span>📐 Multi-Modal System Architecture & Blueprints</span>
+                        </div>
+                        <div className="space-y-3">
+                            {architecture_diagrams.map((diag, dIdx) => (
+                                <div key={dIdx} className="bg-white/90 dark:bg-zinc-900/90 p-4 rounded-lg border border-blue-100 dark:border-blue-900/40 shadow-sm">
+                                    <h4 className="font-bold text-sm text-zinc-900 dark:text-zinc-100">{diag.title}</h4>
+                                    <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-0.5 mb-2.5">{diag.description}</p>
+                                    <div className="bg-zinc-950 text-emerald-400 p-3 rounded-md font-mono text-xs overflow-x-auto whitespace-pre border border-zinc-800">
+                                        {diag.mermaid_definition}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
                 <div className="space-y-4">
                     {weeks.map(week => {
                         const isExpanded = expandedSections.includes(week);
@@ -125,7 +347,31 @@ export const RoadmapDisplay = ({ roadmap }) => {
         const months = data.months || [];
         return (
             <div className="mt-12 space-y-6">
-                {renderHeader(`Extended ${data.total_days}-Day Roadmap`, <Map className="w-6 h-6 text-zinc-900 dark:text-zinc-100"/>)}
+                <div className="space-y-3 border-b border-zinc-200 dark:border-zinc-800 pb-4">
+                    {renderHeader(`Extended ${data.total_days}-Day Roadmap`, <Map className="w-6 h-6 text-zinc-900 dark:text-zinc-100"/>)}
+                    {renderFilterControls()}
+                </div>
+
+                {/* Multi-Modal Architecture & Conceptual Diagrams */}
+                {architecture_diagrams && architecture_diagrams.length > 0 && (
+                    <div className="p-4 rounded-xl border border-blue-200/80 dark:border-blue-900/60 bg-blue-50/40 dark:bg-blue-950/20 mb-6">
+                        <div className="flex items-center gap-2 mb-2 text-blue-800 dark:text-blue-300 font-semibold text-sm">
+                            <span>📐 Multi-Modal System Architecture & Blueprints</span>
+                        </div>
+                        <div className="space-y-3">
+                            {architecture_diagrams.map((diag, dIdx) => (
+                                <div key={dIdx} className="bg-white/90 dark:bg-zinc-900/90 p-4 rounded-lg border border-blue-100 dark:border-blue-900/40 shadow-sm">
+                                    <h4 className="font-bold text-sm text-zinc-900 dark:text-zinc-100">{diag.title}</h4>
+                                    <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-0.5 mb-2.5">{diag.description}</p>
+                                    <div className="bg-zinc-950 text-emerald-400 p-3 rounded-md font-mono text-xs overflow-x-auto whitespace-pre border border-zinc-800">
+                                        {diag.mermaid_definition}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
                 <div className="space-y-4">
                     {months.map(month => {
                         const isExpanded = expandedSections.includes(month.month);
@@ -174,7 +420,10 @@ export const RoadmapDisplay = ({ roadmap }) => {
         const phases = data.phases || [];
         return (
             <div className="mt-12 space-y-6">
-                {renderHeader(`Career Transition Feasibility (${data.total_months} months)`, <Compass className="w-6 h-6 text-zinc-900 dark:text-zinc-100"/>)}
+                <div className="space-y-3 border-b border-zinc-200 dark:border-zinc-800 pb-4">
+                    {renderHeader(`Career Transition Feasibility (${data.total_months} months)`, <Compass className="w-6 h-6 text-zinc-900 dark:text-zinc-100"/>)}
+                    {renderFilterControls()}
+                </div>
                 
                 {ai_note && (
                     <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">

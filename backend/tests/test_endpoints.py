@@ -34,9 +34,9 @@ async def test_analyze_endpoint(llm_tracker):
         assert "skillGaps" in data
         assert "strengths" in data
         assert "roadmap" in data
-        # Exactly 3 Phase 3 calls: executive_summary, ats_optimization, seniority_alignment
+        # Consolidated Phase 3 runs 1 holistic insight call
         # (experience extraction matches regex; roadmap skipped for perfect match)
-        assert llm_tracker.call_count == 3
+        assert llm_tracker.call_count == 1
 
 @pytest.mark.asyncio
 async def test_analyze_endpoint_unparseable_jd(llm_tracker):
@@ -80,8 +80,8 @@ async def test_analyze_endpoint_unconfirmed_seniority_skips_llm(llm_tracker):
         assert data["scoreBreakdown"]["skillsMatch"] == 100
         # When seniority is unconfirmed, overall score renormalizes to skills-only (100)
         assert data["overallScore"] == 100
-        # seniority_alignment LLM call is skipped! Exactly 3 calls: 1 candidate extraction fallback + 2 Phase 3 calls (executive_summary, ats_optimization)
-        assert llm_tracker.call_count == 3
+        # 1 candidate extraction fallback + 1 consolidated Phase 3 holistic call (seniority alignment output suppressed when unconfirmed)
+        assert llm_tracker.call_count == 2
         assert not any("alignment_summary" in call["schema"] for call in llm_tracker.calls)
 
 @pytest.mark.asyncio

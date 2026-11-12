@@ -1,0 +1,66 @@
+[
+  {
+    "id": "phrasing-legal-contracts",
+    "domain": "legal",
+    "skills": ["contract drafting", "negotiation", "commercial agreements", "contract review"],
+    "action_verbs": ["Negotiated", "Drafted", "Audited", "Structured"],
+    "star_template": "Drafted and negotiated [X]+ enterprise vendor agreements (MSAs, SOWs, NDAs), accelerating contract turnaround by [Y]% while eliminating compliance liabilities.",
+    "example_before": "Helped draft contracts for business partners.",
+    "example_after": "Drafted and negotiated 35+ commercial vendor agreements (MSAs and SOWs), reducing deal cycle turnaround by 25% and ensuring zero regulatory non-compliance findings."
+  },
+  {
+    "id": "phrasing-legal-compliance",
+    "domain": "legal",
+    "skills": ["compliance", "regulatory compliance", "gdpr", "data privacy", "hipaa", "due diligence"],
+    "action_verbs": ["Orchestrated", "Implemented", "Audited", "Remediated"],
+    "star_template": "Designed and enacted comprehensive [Regulation/Standard] internal audit framework, reducing enterprise privacy risk and achieving 100% audit pass rate.",
+    "example_before": "Responsible for company compliance and privacy policies.",
+    "example_after": "Orchestrated end-to-end GDPR and CCPA compliance audit across 12 product lines, mitigating high-risk exposure and achieving a 100% clean external compliance certification."
+  },
+  {
+    "id": "phrasing-tech-cloud-devops",
+    "domain": "tech",
+    "skills": ["docker", "kubernetes", "aws", "terraform", "ci/cd", "devops", "cloud computing"],
+    "action_verbs": ["Architected", "Automated", "Containerized", "Deployed"],
+    "star_template": "Architected automated CI/CD and container orchestration pipelines using [Technology], slashing deployment cycle time by [X]% and achieving [Y]% uptime.",
+    "example_before": "Worked with Docker and AWS to deploy web services.",
+    "example_after": "Architected scalable Kubernetes microservices deployment on AWS via Terraform, reducing pipeline build times by 45% and maintaining 99.98% service uptime."
+  },
+  {
+    "id": "phrasing-tech-fullstack-python",
+    "domain": "tech",
+    "skills": ["fastapi", "python", "react", "next.js", "rest api", "postgresql", "sql"],
+    "action_verbs": ["Engineered", "Refactored", "Optimized", "Designed"],
+    "star_template": "Engineered asynchronous REST APIs in [Framework] integrated with [Database], reducing average endpoint p95 latency from [X]ms to [Y]ms under [Z] req/sec.",
+    "example_before": "Built Python backend endpoints and connected database.",
+    "example_after": "Engineered asynchronous FastAPI microservices with PostgreSQL query indexing, reducing p95 API latency by 60% while handling 1,500+ requests per second."
+  },
+  {
+    "id": "phrasing-health-clinical-nursing",
+    "domain": "healthcare",
+    "skills": ["patient care", "bls", "acls", "telemetry", "ehr", "triage", "nursing", "icu"],
+    "action_verbs": ["Administered", "Monitored", "Coordinated", "Executed"],
+    "star_template": "Delivered acute care triage and telemetry monitoring for [X]+ high-acuity patients per shift, achieving 0 medication administration errors through strict adherence to clinical protocols.",
+    "example_before": "Monitored patient telemetry and documented charts.",
+    "example_after": "Delivered telemetry monitoring and rapid emergency interventions (ACLS/BLS) for 8+ critical patients daily in ICU, maintaining 100% protocol adherence and zero safety events."
+  },
+  {
+    "id": "phrasing-trades-hvac-safety",
+    "domain": "trades",
+    "skills": ["hvac", "epa 608", "osha", "electrical wiring", "troubleshooting", "blueprints"],
+    "action_verbs": ["Diagnosed", "Overhauled", "Commissioned", "Enforced"],
+    "star_template": "Diagnosed and resolved critical electrical/mechanical faults across [X]+ commercial units, adhering to OSHA/EPA standards with zero safety violations.",
+    "example_before": "Fixed HVAC systems and checked wiring.",
+    "example_after": "Diagnosed and commissioned 40+ commercial rooftop HVAC systems under EPA 608 recovery standards, cutting diagnostic callback rates by 35% with zero OSHA recordable incidents."
+  },
+  {
+    "id": "phrasing-finance-modeling",
+    "domain": "finance",
+    "skills": ["financial modeling", "dcf", "valuation", "excel", "financial analysis", "accounting"],
+    "action_verbs": ["Built", "Formulated", "Analyzed", "Forecasted"],
+    "star_template": "Formulated dynamic 3-statement financial and DCF valuation models for [X] transactions totaling $[Y]M, guiding executive investment decisions.",
+    "example_before": "Did financial analysis and Excel spreadsheets.",
+    "example_after": "Formulated dynamic 3-statement integrated financial forecast and sensitivity models for $45M M&A pipeline, identifying $3.2M in cost synergy opportunities."
+  }
+]
+

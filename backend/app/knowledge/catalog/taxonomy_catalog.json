@@ -1,0 +1,113 @@
+[
+  {
+    "canonical": "hipaa compliance",
+    "domain": "healthcare",
+    "aliases": [
+      "45 cfr part 160",
+      "45 cfr part 164",
+      "hipaa",
+      "health insurance portability and accountability act",
+      "protected health information",
+      "phi security",
+      "patient privacy compliance"
+    ]
+  },
+  {
+    "canonical": "kubernetes",
+    "domain": "tech",
+    "aliases": [
+      "k8s",
+      "container orchestration",
+      "eks",
+      "gke",
+      "kubernetes cluster management"
+    ]
+  },
+  {
+    "canonical": "contract drafting",
+    "domain": "legal",
+    "aliases": [
+      "commercial contract drafting",
+      "drafting msas and sows",
+      "agreement drafting",
+      "commercial agreements negotiation",
+      "contract negotiation and drafting"
+    ]
+  },
+  {
+    "canonical": "trial litigation",
+    "domain": "legal",
+    "aliases": [
+      "first chair trial experience",
+      "courtroom litigation",
+      "lead trial counsel",
+      "jury trial advocacy",
+      "civil litigation trial"
+    ]
+  },
+  {
+    "canonical": "advanced cardiac life support",
+    "domain": "healthcare",
+    "aliases": [
+      "acls",
+      "acls certified",
+      "advanced cardiovascular life support",
+      "cardiac resuscitation"
+    ]
+  },
+  {
+    "canonical": "basic life support",
+    "domain": "healthcare",
+    "aliases": [
+      "bls",
+      "bls certified",
+      "cpr certified",
+      "cpr/bls"
+    ]
+  },
+  {
+    "canonical": "electronic health records",
+    "domain": "healthcare",
+    "aliases": [
+      "ehr",
+      "emr",
+      "electronic medical records",
+      "epic systems",
+      "cerner",
+      "epic ehr"
+    ]
+  },
+  {
+    "canonical": "osha compliance",
+    "domain": "trades",
+    "aliases": [
+      "osha 10",
+      "osha 30",
+      "occupational safety and health",
+      "workplace safety regulations",
+      "osha general industry"
+    ]
+  },
+  {
+    "canonical": "epa 608 certification",
+    "domain": "trades",
+    "aliases": [
+      "epa 608",
+      "section 608 universal",
+      "epa universal technician",
+      "refrigerant recovery certification"
+    ]
+  },
+  {
+    "canonical": "financial modeling",
+    "domain": "finance",
+    "aliases": [
+      "three statement financial modeling",
+      "dcf modeling",
+      "discounted cash flow",
+      "integrated financial model",
+      "lbo modeling"
+    ]
+  }
+]
+

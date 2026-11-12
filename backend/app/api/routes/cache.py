@@ -10,6 +10,7 @@ from app.models.api_models import (
     CacheKeysResponse
 )
 from app.utils.logger import logger
+from app.utils.security import require_admin_access
 
 router = APIRouter()
 
@@ -38,6 +39,7 @@ async def get_cache_stats(
 @router.post(
     "/cache/clear",
     response_model=CacheClearResponse,
+    dependencies=[Depends(require_admin_access)],
     summary="Clear all cache"
 )
 async def clear_cache(
@@ -66,13 +68,14 @@ async def warmup_cache():
 @router.delete(
     "/cache/invalidate",
     response_model=CacheInvalidateResponse,
+    dependencies=[Depends(require_admin_access)],
     summary="Invalidate cache by pattern"
 )
 async def invalidate_cache(
     pattern: str = Query(..., description="Cache key pattern to invalidate (e.g., 'emb:*')"),
     cache_manager: CacheManager = Depends(get_cache_manager)
 ):
-    """Invalidate cache entries matching pattern."""
+    """Invalidate cache entries matching pattern using non-blocking SCAN."""
     if not pattern:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -85,16 +88,17 @@ async def invalidate_cache(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Redis not available"
         )
-        
-    keys = await client.keys(pattern)
-    if keys:
-        await client.delete(*keys)
+
+    matched_keys = [k async for k in client.scan_iter(match=pattern, count=100)]
+    if matched_keys:
+        await client.delete(*matched_keys)
         return {"message": f"Invalidated cache entries matching: {pattern}"}
     return {"message": "No cache entries matched the pattern"}
 
 @router.get(
     "/cache/keys",
     response_model=CacheKeysResponse,
+    dependencies=[Depends(require_admin_access)],
     summary="List cache keys by prefix"
 )
 async def list_cache_keys(
@@ -102,7 +106,7 @@ async def list_cache_keys(
     limit: int = Query(100, description="Maximum keys to return"),
     cache_manager: CacheManager = Depends(get_cache_manager)
 ):
-    """List cache keys by prefix."""
+    """List cache keys by prefix using non-blocking SCAN."""
     client = await cache_manager.redis_client.get_client()
     if not client:
         raise HTTPException(
@@ -112,10 +116,11 @@ async def list_cache_keys(
     
     try:
         pattern = f"{prefix}*" if prefix else "*"
-        keys = await client.keys(pattern)
-        # Limit results
-        if len(keys) > limit:
-            keys = keys[:limit]
+        keys = []
+        async for key in client.scan_iter(match=pattern, count=100):
+            keys.append(key)
+            if len(keys) >= limit:
+                break
         return {"keys": keys, "total": len(keys), "limited": len(keys) >= limit}
     except Exception as e:
         logger.error(f"Failed to list cache keys: {e}")

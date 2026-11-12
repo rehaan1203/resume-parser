@@ -200,3 +200,19 @@ async def test_entry_level_jd_candidate_extraction_and_strengths(mock_external_o
         assert "0 years" not in strength.lower()
         assert "total experience" not in strength.lower()
 
+
+def test_candidate_evidence_camelcase_and_snakecase_parity():
+    """Verify that seniority calculator emits both camelCase and snake_case for candidateEvidence/Source."""
+    from app.utils.seniority_calculator import calculate_seniority_score_and_gap
+    from app.utils.experience_extractor import ExperienceResult
+
+    cand = ExperienceResult(status="found", years=5, source="regex", evidence="5 years of software engineering")
+    jd = ExperienceResult(status="found", years=3, source="regex", evidence="3+ years required")
+
+    res = calculate_seniority_score_and_gap(cand, jd)
+    assert res["candidate_evidence"] == "5 years of software engineering"
+    assert res["candidateEvidence"] == "5 years of software engineering"
+    assert res["candidate_source"] == "regex"
+    assert res["candidateSource"] == "regex"
+
+

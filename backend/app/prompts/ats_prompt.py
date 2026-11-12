@@ -22,20 +22,70 @@ def build_standard_ats_prompt(gaps: List[str]) -> str:
         """
 
 
+def build_rag_ats_prompt(
+    gaps: List[str],
+    phrasing_templates: List[dict] = None
+) -> str:
+    """Build prompt for ATS optimization grounded in verified STAR phrasing templates."""
+    templates_str = ""
+    if phrasing_templates:
+        lines = []
+        for t in phrasing_templates[:3]:
+            verbs = ", ".join(t.get("action_verbs", [])[:3])
+            lines.append(
+                f"- Domain: {t.get('domain', '').title()} | Verbs: {verbs}\n"
+                f"  Formula: {t.get('star_template', '')}\n"
+                f"  Example Rewrite: \"{t.get('example_after', '')}\""
+            )
+        templates_str = "\n".join(lines)
+    else:
+        templates_str = "None provided. Use standard STAR framework (Situation, Task, Action, Result)."
+
+    return f"""
+        Provide specific, actionable ATS optimization tips based on the candidate's skill gaps.
+        Skill gaps: {', '.join(gaps)}
+        
+        PROVEN ATS BULLET TEMPLATES & ACTION VERBS AVAILABLE:
+{templates_str}
+
+        INSTRUCTIONS:
+        1. 'keywords': List specific keywords to add (e.g., "Add 'Contract Negotiation' to Core Competencies").
+        2. 'phrasing': Provide a list of objects with 'original' and 'suggested' bullet points. You MUST ground the 'suggested' rewrites using the STAR formula and high-impact action verbs provided above. Every suggestion must include quantifiable metrics, specific scopes, and tangible business outcomes.
+        3. 'formatting_tips': 2-3 standard ATS formatting tips.
+        
+        Do not invent requirements not related to the gaps.
+        """
+
+
 def build_transition_ats_prompt(
     resume_domain: str,
     jd_domain: str,
-    gaps: List[str]
+    gaps: List[str],
+    transition_bridge: dict = None
 ) -> str:
-    """Build prompt for cross-domain career transition ATS optimization tips."""
+    """Build prompt for cross-domain career transition ATS optimization tips grounded in verified bridge blueprints."""
+    bridge_context = ""
+    if transition_bridge:
+        strengths = ", ".join(transition_bridge.get("transferable_strengths", []))
+        certs = ", ".join(transition_bridge.get("bridge_certifications", []))
+        advice = transition_bridge.get("strategic_advice", "")
+        projects = "; ".join(transition_bridge.get("recommended_projects", []))
+        bridge_context = f"""
+        VERIFIED CAREER TRANSITION BLUEPRINT ({resume_domain} -> {jd_domain}):
+        - Transferable Strengths to Highlight: {strengths}
+        - High-Leverage Bridge Credentials: {certs}
+        - Resume Repositioning Strategy: {advice}
+        - Recommended Proof-of-Skill Projects: {projects}
+        """
+
     return f"""
             Provide specific, actionable Career Transition ATS optimization tips for a candidate moving from {resume_domain} to {jd_domain}.
             Missing technical skills: {', '.join(gaps)}
-            
+            {bridge_context}
             Output format exactly:
-            1. 'keywords': A list of foundational keywords they should learn and add (e.g., "Add 'Python' to Core Competencies").
-            2. 'phrasing': A list of objects with 'original' and 'suggested' bullet points demonstrating how to translate {resume_domain} experience into transferable skills for {jd_domain}.
-            3. 'formatting_tips': 2-3 standard ATS formatting tips (e.g. use functional resume format).
+            1. 'keywords': A list of foundational keywords they should learn and add (e.g., "Add 'Python' to Core Competencies"). Include recommended bridge credentials above.
+            2. 'phrasing': A list of objects with 'original' and 'suggested' bullet points demonstrating how to translate {resume_domain} experience into transferable skills for {jd_domain} using the repositioning strategy.
+            3. 'formatting_tips': 2-3 standard ATS formatting tips (e.g. use functional resume format, feature bridge credentials).
             """
 
 

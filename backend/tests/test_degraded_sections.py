@@ -34,9 +34,11 @@ async def test_orchestrator_includes_degraded_sections():
     with patch("app.ai.explainer.Phase3Explainer") as MockExplainer:
         mock_instance = MockExplainer.return_value
         mock_instance.degraded_sections = ["executive_summary", "roadmap"]
-        mock_instance.generate_executive_summary = AsyncMock(return_value="Degraded summary")
-        mock_instance.generate_ats_optimization = AsyncMock(return_value={"keywords": []})
-        mock_instance.generate_seniority_alignment = AsyncMock(return_value={})
+        mock_instance.generate_holistic_insights = AsyncMock(return_value={
+            "executive_summary": "Degraded summary",
+            "ats_optimization": {"keywords": []},
+            "seniority_alignment": {"alignment_summary": "Reviewed", "recommendation": "Advance", "next_steps": []},
+        })
         mock_instance.generate_roadmap = AsyncMock(return_value={"weeks": []})
         
         result = await orchestrator.process({

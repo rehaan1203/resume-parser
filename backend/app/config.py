@@ -4,7 +4,7 @@ from pydantic import model_validator
 from typing import List, Optional
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", case_sensitive=False)
+    model_config = SettingsConfigDict(env_file=(".env", "backend/.env"), env_file_encoding="utf-8", case_sensitive=False)
     
     # Application
     app_name: str = "Friction Matcher API"
@@ -33,6 +33,9 @@ class Settings(BaseSettings):
     gemini_model: str = "gemini-2.5-flash"
     embedding_model: str = "gemini-embedding-2"
     use_ai_service: bool = True
+    ai_ssl_verify: bool = False
+    admin_api_key: Optional[str] = None
+    max_download_size_bytes: int = 15 * 1024 * 1024
     ai_max_retries: int = 3
     ai_timeout_seconds: int = 45
     ai_backoff_factor: float = 2.0
@@ -184,6 +187,43 @@ class Settings(BaseSettings):
     timeline_transition_min: int = 12
     timeline_transition_max: int = 24
     
+    # RAG Knowledge Base & Open Source Models
+    rag_knowledge_base_enabled: bool = True
+    rag_vector_store_type: str = "memory"
+    rag_similarity_threshold: float = 0.5
+    rag_top_k: int = 4
+    rag_embedding_provider: str = "deterministic"
+    huggingface_api_key: Optional[str] = None
+    groq_api_key: Optional[str] = None
+    groq_model: str = "llama-3.3-70b-versatile"
+    rag_health_check_interval_hours: int = 24
+    rag_auto_health_audit_on_startup: bool = False
+    rag_enable_graph: bool = True
+    rag_enable_hyde: bool = True
+    rag_enable_crag: bool = True
+    crag_min_confidence: float = 0.4
+    rag_enable_recency_scorer: bool = True
+    rag_enable_self_query: bool = True
+    rag_enable_compressor: bool = True
+    rag_enable_diagrams: bool = True
+
+    # Azure AD / Microsoft Graph Outlook Connector
+    azure_tenant_id: Optional[str] = None
+    azure_client_id: Optional[str] = None
+    azure_client_secret: Optional[str] = None
+    azure_outlook_email: Optional[str] = None
+    outlook_auto_reply_enabled: bool = True
+    outlook_poll_limit: int = 10
+    outlook_mark_as_read: bool = True
+    outlook_auto_poll_enabled: bool = True
+    outlook_poll_interval_seconds: int = 45
+
+    # Microsoft SharePoint JD Connector
+    sharepoint_site_url: Optional[str] = None
+    sharepoint_folder_path: str = "Shared Documents/JobDescriptions"
+    sharepoint_jd_cache_ttl_seconds: int = 600
+    sharepoint_auto_match_best_fit: bool = True
+
     @model_validator(mode='after')
     def validate_api_key(self):
         """Require API key if AI service is enabled."""
@@ -192,8 +232,8 @@ class Settings(BaseSettings):
                 f"gemini AI_MODEL ('{self.ai_model}') is not supported on Mistral client. "
                 "Please configure AI_MODEL='mistral-small-latest' or 'codestral-latest'."
             )
-        if self.use_ai_service and not (self.google_api_key or self.mistral_api_key):
-            raise ValueError("Either GOOGLE_API_KEY or MISTRAL_API_KEY required when USE_AI_SERVICE=true")
+        if self.use_ai_service and not (self.google_api_key or self.mistral_api_key or self.groq_api_key):
+            raise ValueError("Either GOOGLE_API_KEY, MISTRAL_API_KEY, or GROQ_API_KEY required when USE_AI_SERVICE=true")
         if self.tools_enabled and not self.tavily_api_key:
             raise ValueError("TAVILY_API_KEY required when TOOLS_ENABLED=true")
         return self

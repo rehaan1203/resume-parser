@@ -31,23 +31,27 @@ def setup_logging(level: str = "INFO"):
         format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan> - <level>{message}</level>",
         level=level,
         colorize=True,
-        enqueue=True
+        enqueue=False
     )
     
-    # File handler
-    log_dir = Path("logs")
-    log_dir.mkdir(exist_ok=True)
-    
-    logger.add(
-        "logs/app.log",
-        rotation="500 MB",
-        retention="10 days",
-        format="{time:YYYY-MM-DD HH:mm:ss} | {level: <8} | {name}:{function} - {message}",
-        level=level,
-        backtrace=True,
-        diagnose=True,
-        enqueue=True
-    )
+    # File handler (with lock guard for multiple Windows processes)
+    try:
+        log_dir = Path("logs")
+        log_dir.mkdir(exist_ok=True)
+        
+        logger.add(
+            "logs/app.log",
+            rotation="500 MB",
+            retention="10 days",
+            format="{time:YYYY-MM-DD HH:mm:ss} | {level: <8} | {name}:{function} - {message}",
+            level=level,
+            backtrace=True,
+            diagnose=True,
+            enqueue=False,
+            catch=True
+        )
+    except Exception:
+        pass
     
     # Intercept standard logging
     logging.basicConfig(handlers=[InterceptHandler()], level=0, force=True)

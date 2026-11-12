@@ -1,0 +1,67 @@
+[
+  {
+    "id": "diag-k8s-pod-networking",
+    "domain": "tech",
+    "associated_skills": ["kubernetes", "docker", "containers", "networking"],
+    "title": "Kubernetes Cluster Ingress & Service Mesh Topology",
+    "description": "Visualizes end-to-end traffic flow from external clients through Ingress, ClusterIP service abstraction, and target Pod replicas.",
+    "mermaid_definition": "graph TD\n    Client([External Client]) --> Ingress[NGINX / ALB Ingress Controller]\n    Ingress --> Service[ClusterIP Service: api-svc]\n    Service --> Pod1[Pod Replica 1: FastAPI App]\n    Service --> Pod2[Pod Replica 2: FastAPI App]\n    Service --> Pod3[Pod Replica 3: FastAPI App]\n    Pod1 --> DB[(PostgreSQL Database Cluster)]\n    Pod2 --> DB\n    Pod3 --> DB"
+  },
+  {
+    "id": "diag-microservices-event-driven",
+    "domain": "tech",
+    "associated_skills": ["microservices", "python", "fastapi", "rest api"],
+    "title": "Asynchronous Event-Driven Microservices Architecture",
+    "description": "Decoupled distributed services communicating via Kafka / RabbitMQ message brokers with independent databases.",
+    "mermaid_definition": "flowchart LR\n    Gateway[API Gateway] --> OrderSvc[Order Microservice]\n    Gateway --> UserSvc[User Microservice]\n    OrderSvc --> Broker{{Kafka Message Broker}}\n    Broker --> PaymentSvc[Payment Worker Service]\n    Broker --> NotifySvc[Notification Service]\n    OrderSvc --> OrderDB[(Order Store)]\n    PaymentSvc --> PaymentDB[(Ledger Store)]"
+  },
+  {
+    "id": "diag-mlops-pipeline",
+    "domain": "tech",
+    "associated_skills": ["machine learning", "pytorch", "mlops", "deep learning"],
+    "title": "Production MLOps Training & Serving Architecture",
+    "description": "Continuous training loop from feature store through model registry to real-time inference endpoints.",
+    "mermaid_definition": "flowchart TD\n    Data[(Raw Lake / Feature Store)] --> Preprocess[Feature Engineering & Validation]\n    Preprocess --> Train[Distributed PyTorch Training on GPU]\n    Train --> Eval[Model Evaluation & Threshold Verification]\n    Eval --> Registry[MLflow Model Registry (Production Staging)]\n    Registry --> Deploy[Triton / FastAPI Serving Cluster]\n    Deploy --> Monitor[Drift & Latency Telemetry Monitor]\n    Monitor -->|Trigger Retrain| Preprocess"
+  },
+  {
+    "id": "diag-dcf-valuation-flow",
+    "domain": "finance",
+    "associated_skills": ["dcf_valuation", "financial_modeling", "valuation", "financial analysis"],
+    "title": "Discounted Cash Flow (DCF) 3-Statement Modeling Flow",
+    "description": "Demonstrates the step-by-step calculation from revenue forecasting to Enterprise Value and equity share price.",
+    "mermaid_definition": "graph TD\n    IS[Income Statement Revenue & EBITDA] --> EBIT[Operating Profit: EBIT]\n    EBIT --> NOPAT[Net Operating Profit After Tax: NOPAT]\n    NOPAT --> UFCF[Unlevered Free Cash Flow: UFCF = NOPAT + D&A - CapEx - Change in NWC]\n    WACC[Calculate Weighted Average Cost of Capital: WACC] --> PV[Discount Cash Flows to Present Value]\n    UFCF --> PV\n    PV --> EV[Enterprise Value = Sum of PV + Terminal Value]\n    EV --> EqVal[Equity Value = EV - Net Debt]\n    EqVal --> TargetPrice[Implied Share Price = Equity Value / Shares Outstanding]"
+  },
+  {
+    "id": "diag-clinical-triage-ehr",
+    "domain": "healthcare",
+    "associated_skills": ["clinical workflows", "ehr", "triage", "patient care", "hipaa"],
+    "title": "Clinical Patient Triage & EHR Order Lifecycle",
+    "description": "Emergency department patient admission, Acuity triage grading (ESI 1-5), and EHR charting workflow.",
+    "mermaid_definition": "stateDiagram-v2\n    [*] --> IntakeTriage: Patient Presentation\n    IntakeTriage --> AcuityRating: Emergency Severity Index (ESI 1-5)\n    AcuityRating --> Resuscitation: ESI Level 1 (Immediate Bedside)\n    AcuityRating --> EmergentCare: ESI Level 2\n    AcuityRating --> UrgentCare: ESI Level 3-5\n    EmergentCare --> EHRCharting: Vital Signs & Physician Orders Entered\n    UrgentCare --> EHRCharting\n    EHRCharting --> MedicationAdmin: eMAR Barcode Verification\n    MedicationAdmin --> Disposition: Discharge or Inpatient Admission\n    Disposition --> [*]"
+  },
+  {
+    "id": "diag-hl7-fhir-integration",
+    "domain": "healthcare",
+    "associated_skills": ["hl7", "fhir", "healthcare informatics", "interoperability"],
+    "title": "HL7 v2 to FHIR Clinical Interoperability Bridge",
+    "description": "Transforming legacy hospital HL7 v2 messages (ADT/ORM) into RESTful SMART-on-FHIR JSON resources.",
+    "mermaid_definition": "sequenceDiagram\n    participant EHR as Hospital EHR (Epic/Cerner)\n    participant Engine as Interface Engine (Mirth/Rhapsody)\n    participant FHIR as HAPI FHIR Server\n    participant App as HealthTech Analytics App\n    EHR->>Engine: HL7 v2.5.1 ADT^A01 (Inpatient Admission Message)\n    Engine->>Engine: Parse MSH, PID, PV1 segments\n    Engine->>FHIR: POST /Patient & POST /Encounter (FHIR JSON)\n    FHIR-->>Engine: 201 Created (UUID Resource)\n    App->>FHIR: GET /Patient?birthdate=gt1980 (SMART on FHIR)\n    FHIR-->>App: Bundle of Verified Patient Resources"
+  },
+  {
+    "id": "diag-contract-negotiation-flow",
+    "domain": "legal",
+    "associated_skills": ["contract law", "contract drafting", "regulatory compliance", "gdpr"],
+    "title": "Commercial Enterprise Contract Negotiation & Due Diligence",
+    "description": "Standard review gates from initial NDA execution through redlining risk covenants to final signature.",
+    "mermaid_definition": "flowchart TD\n    Start([Proposed Agreement Received]) --> NDA[Mutual NDA Verification]\n    NDA --> RiskReview[Risk Assessment: Indemnity, Liability Cap, IP Rights]\n    RiskReview --> Redline[First-Pass Redline Draft Generated]\n    Redline --> InternalReview{General Counsel & Executive Approval}\n    InternalReview -->|Disputed Terms| CounterNegotiate[Counter-Party Redline Negotiations]\n    CounterNegotiate --> RiskReview\n    InternalReview -->|Approved| Execution[DocuSign Signature & Certificate]\n    Execution --> ComplianceArchive[(Compliance Contract Repository & Audit Trail)]"
+  },
+  {
+    "id": "diag-plc-industrial-telemetry",
+    "domain": "trades",
+    "associated_skills": ["plc programming", "bacnet", "scada", "industrial iot", "electrical"],
+    "title": "Industrial PLC Control & SCADA Telemetry Loop",
+    "description": "Closed-loop feedback from physical field sensors through PLC ladder logic to supervisory SCADA HMI consoles.",
+    "mermaid_definition": "graph LR\n    Sensors[Field Sensors: 4-20mA Temp/Pressure Transducers] --> IOMeta[PLC Input Card: 24VDC Analog Module]\n    IOMeta --> CPU[PLC CPU: Ladder Logic Scan Cycle]\n    CPU --> OutputCard[PLC Output Relay Module]\n    OutputCard --> Actuator[VFD Motor Controller / Pneumatic Valve]\n    CPU --> Modbus[Modbus TCP / BACnet Gateway]\n    Modbus --> SCADA[SCADA / HMI Operator Workstation Console]"
+  }
+]
+

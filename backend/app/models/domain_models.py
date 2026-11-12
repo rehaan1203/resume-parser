@@ -178,6 +178,7 @@ class Domain(str, Enum):
     OPERATIONS = "operations"
     ENGINEERING = "engineering"
     SCIENCE = "science"
+    TRADES = "trades"
     UNKNOWN = "unknown"
 
 class DomainDetectionResult(BaseModel):

@@ -2,7 +2,7 @@
 import re
 import hashlib
 from dataclasses import dataclass
-from typing import Dict, Any, Optional, List, Tuple
+from typing import Dict, Any, Optional, List, Tuple, Union
 from app.utils.logger import logger
 from app.utils.cache_manager import CacheManager
 from app.ai.client import GenAIClient
@@ -17,7 +17,7 @@ class ExperienceResult:
     """Explicit result of experience extraction."""
     status: str  # resume: 'found' | 'explicit_zero' | 'not_found' | 'error'
                  # jd: 'found' | 'explicit_zero' | 'not_specified' | 'error'
-    years: Optional[int]
+    years: Optional[Union[int, float]]
     source: str  # 'regex' | 'llm'
     evidence: Optional[str] = None
 
@@ -29,13 +29,16 @@ NUMBER_WORDS = {
     "decade": 10,
 }
 
-NUM_PATTERN = r'(\d+|zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty)'
+NUM_PATTERN = r'(\d+(?:\.\d+)?|zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty)'
 
-def parse_num(val_str: str) -> Optional[int]:
-    """Parse integer or number-word into int."""
+def parse_num(val_str: str) -> Optional[Union[int, float]]:
+    """Parse integer, decimal (e.g. 1.5), or number-word into int or float."""
     if not val_str:
         return None
     val_str = val_str.lower().strip()
+    if re.fullmatch(r'\d+\.\d+', val_str):
+        f_val = round(float(val_str), 1)
+        return int(f_val) if f_val.is_integer() else f_val
     if val_str.isdigit():
         return int(val_str)
     return NUMBER_WORDS.get(val_str)
@@ -97,7 +100,8 @@ def verify_evidence_quote(
             return any(re.search(p, norm_quote) for p in jd_zero_patterns)
 
     # 2. Elapsed time / age filters (ago, old, of age)
-    if re.search(r'\b(?:\d+|' + NUM_PATTERN.replace('(', '(?:') + r')\s*years?\s*(?:ago\b|old\b|-old\b|-year-old\b|of\s+age\b)', norm_quote):
+    num_inner = NUM_PATTERN[1:-1] if NUM_PATTERN.startswith("(") and NUM_PATTERN.endswith(")") else NUM_PATTERN
+    if re.search(r'\b(?:\d+|' + num_inner + r')\s*years?\s*(?:ago\b|old\b|-old\b|-year-old\b|of\s+age\b)', norm_quote):
         return False
     if "graduated" in norm_quote and "ago" in norm_quote:
         return False
@@ -114,7 +118,7 @@ def verify_evidence_quote(
 
     # 4. Number sits next to years / yrs / decade / decades
     has_year_proximity = bool(re.search(
-        r'\b(?:' + NUM_PATTERN.replace('(', '(?:') + r'|\d+)\+?\s*(?:years?|yrs?|decades?)\b',
+        r'\b(?:' + num_inner + r'|\d+)\+?\s*(?:years?|yrs?|decades?)\b',
         norm_quote
     ))
     has_decade_proximity = bool(re.search(r'\b(?:a|one|two|\d+)\s+decades?\b', norm_quote))
@@ -245,50 +249,58 @@ async def extract_candidate_experience_with_llm(
         return regex_res
 
     from app.config import settings
+    from app.utils.document_chunker import chunk_document
     max_chars = getattr(settings, "experience_llm_max_chars", 15000)
 
     try:
         ai_client = client or GenAIClient()
-        prompt = build_candidate_experience_prompt(resume_text, max_chars=max_chars)
-        raw_response = await ai_client.generate_structured_content(
-            prompt=prompt,
-            output_schema={
-                "status": "string",
-                "years": 0,
-                "evidence_quote": "string",
-                "scope": "string",
-                "covers_entire_career": True
-            },
-            temperature=0.0
+        # Process full document cleanly in semantic chunks when exceeding max_chars (zero silent drop)
+        doc_chunks = (
+            chunk_document(resume_text, doc_type="resume", chunk_size=max_chars, overlap=400)
+            if len(resume_text) > max_chars
+            else [{"text": resume_text}]
         )
-        status = raw_response.get("status")
-        years = raw_response.get("years")
-        quote = raw_response.get("evidence_quote")
-        scope = raw_response.get("scope")
-        covers_entire_career = raw_response.get("covers_entire_career")
 
-        if status == "found":
-            if not isinstance(years, int) or years < 0 or years > 50:
-                return ExperienceResult(status="not_found", years=None, source="llm")
-            if scope != "total_career" or covers_entire_career is not True:
-                logger.warning(f"Candidate experience rejected due to scope={scope!r}, covers_entire_career={covers_entire_career!r}: quote={quote!r}")
-                return ExperienceResult(status="not_found", years=None, source="llm")
-            if not verify_evidence_quote(quote, resume_text, years, mode="candidate", scope=scope):
-                logger.warning(f"Candidate experience quote verification failed: quote={quote!r}, years={years}")
-                return ExperienceResult(status="not_found", years=None, source="llm")
-            return ExperienceResult(status="found", years=years, source="llm", evidence=quote)
+        for chunk in doc_chunks:
+            prompt = build_candidate_experience_prompt(chunk["text"], max_chars=max_chars)
+            raw_response = await ai_client.generate_structured_content(
+                prompt=prompt,
+                output_schema={
+                    "status": "string",
+                    "years": 0,
+                    "evidence_quote": "string",
+                    "scope": "string",
+                    "covers_entire_career": True
+                },
+                temperature=0.0
+            )
+            status = raw_response.get("status")
+            years = raw_response.get("years")
+            quote = raw_response.get("evidence_quote")
+            scope = raw_response.get("scope")
+            covers_entire_career = raw_response.get("covers_entire_career")
 
-        elif status == "explicit_zero":
-            if scope and scope != "total_career":
-                return ExperienceResult(status="not_found", years=None, source="llm")
-            if covers_entire_career is False:
-                return ExperienceResult(status="not_found", years=None, source="llm")
-            if quote and not verify_evidence_quote(quote, resume_text, 0, mode="candidate", scope="total_career"):
-                return ExperienceResult(status="not_found", years=None, source="llm")
-            return ExperienceResult(status="explicit_zero", years=0, source="llm", evidence=quote)
+            if status == "found":
+                if not isinstance(years, (int, float)) or isinstance(years, bool) or years < 0 or years > 50:
+                    continue
+                if scope != "total_career" or covers_entire_career is not True:
+                    logger.warning(f"Candidate experience rejected due to scope={scope!r}, covers_entire_career={covers_entire_career!r}: quote={quote!r}")
+                    continue
+                if not verify_evidence_quote(quote, resume_text, years, mode="candidate", scope=scope):
+                    logger.warning(f"Candidate experience quote verification failed: quote={quote!r}, years={years}")
+                    continue
+                return ExperienceResult(status="found", years=years, source="llm", evidence=quote)
 
-        else:
-            return ExperienceResult(status="not_found", years=None, source="llm")
+            elif status == "explicit_zero":
+                if scope and scope != "total_career":
+                    continue
+                if covers_entire_career is False:
+                    continue
+                if quote and not verify_evidence_quote(quote, resume_text, 0, mode="candidate", scope="total_career"):
+                    continue
+                return ExperienceResult(status="explicit_zero", years=0, source="llm", evidence=quote)
+
+        return ExperienceResult(status="not_found", years=None, source="llm")
 
     except Exception as e:
         logger.error(f"Candidate experience LLM extraction failed: {e}")
@@ -372,38 +384,43 @@ async def extract_required_experience_with_llm(
             )
 
     try:
-        prompt = build_jd_experience_prompt(jd_text, max_chars=max_chars)
-        raw_response = await ai_client.generate_structured_content(
-            prompt=prompt,
-            output_schema={
-                "status": "string",
-                "years": 0,
-                "evidence_quote": "string"
-            },
-            temperature=0.0
+        from app.utils.document_chunker import chunk_document
+        doc_chunks = (
+            chunk_document(jd_text, doc_type="jd", chunk_size=max_chars, overlap=400)
+            if len(jd_text) > max_chars
+            else [{"text": jd_text}]
         )
-        status = raw_response.get("status")
-        years = raw_response.get("years")
-        quote = raw_response.get("evidence_quote")
 
-        result = None
-        if status == "found":
-            if not isinstance(years, int) or years < 0 or years > 50:
-                result = ExperienceResult(status="not_specified", years=None, source="llm")
-            elif not verify_evidence_quote(quote, jd_text, years, mode="jd"):
-                logger.warning(f"JD experience quote verification failed: quote={quote!r}, years={years}")
-                result = ExperienceResult(status="not_specified", years=None, source="llm")
-            else:
+        result = ExperienceResult(status="not_specified", years=None, source="llm")
+        for chunk in doc_chunks:
+            prompt = build_jd_experience_prompt(chunk["text"], max_chars=max_chars)
+            raw_response = await ai_client.generate_structured_content(
+                prompt=prompt,
+                output_schema={
+                    "status": "string",
+                    "years": 0,
+                    "evidence_quote": "string"
+                },
+                temperature=0.0
+            )
+            status = raw_response.get("status")
+            years = raw_response.get("years")
+            quote = raw_response.get("evidence_quote")
+
+            if status == "found":
+                if not isinstance(years, (int, float)) or isinstance(years, bool) or years < 0 or years > 50:
+                    continue
+                if not verify_evidence_quote(quote, jd_text, years, mode="jd"):
+                    logger.warning(f"JD experience quote verification failed: quote={quote!r}, years={years}")
+                    continue
                 result = ExperienceResult(status="found", years=years, source="llm", evidence=quote)
+                break
 
-        elif status == "explicit_zero":
-            if quote and not verify_evidence_quote(quote, jd_text, 0, mode="jd"):
-                result = ExperienceResult(status="not_specified", years=None, source="llm")
-            else:
+            elif status == "explicit_zero":
+                if quote and not verify_evidence_quote(quote, jd_text, 0, mode="jd"):
+                    continue
                 result = ExperienceResult(status="explicit_zero", years=0, source="llm", evidence=quote)
-
-        else:
-            result = ExperienceResult(status="not_specified", years=None, source="llm")
+                break
 
         if getattr(settings, "cache_enabled", True) and result.status in ("found", "explicit_zero"):
             await cache_manager.set(
@@ -440,5 +457,68 @@ def _extract_jd_clause(text: str, matches: list):
 
             if val is not None and 0 <= val <= 50 and not (1950 <= val <= 2100):
                 matches.append((val, m.group(0)))
+
+async def extract_candidate_experience_unified(
+    resume_text: str,
+    client: Optional[GenAIClient] = None,
+    user_entered_years: Optional[float] = None
+) -> ExperienceResult:
+    """
+    Unified Experience Engine (D5 Specification).
+    Combines:
+    1. User-entered override (if present)
+    2. Stated candidate experience (regex + LLM fallback)
+    3. Mathematical interval-union of parsed date spans
+    4. Precedence: max(T_stated, T_computed)
+    5. Discrepancy warning flag
+    """
+    from app.utils.date_span_calculator import (
+        extract_all_date_spans_from_text,
+        compute_effective_experience
+    )
+
+    # 1. User-entered override
+    if user_entered_years is not None and user_entered_years >= 0:
+        return ExperienceResult(
+            status="found" if user_entered_years > 0 else "explicit_zero",
+            years=int(round(user_entered_years)),
+            source="user_override",
+            evidence=f"User-entered override: {user_entered_years} years"
+        )
+
+    # 2. Extract stated experience via regex + LLM
+    stated_res = await extract_candidate_experience_with_llm(resume_text, client=client)
+    stated_years = float(stated_res.years) if (stated_res.status in ("found", "explicit_zero") and stated_res.years is not None) else None
+
+    # 3. Extract and parse all date spans
+    spans = extract_all_date_spans_from_text(resume_text)
+
+    # 4. Compute effective experience
+    effective = compute_effective_experience(spans, stated_years=stated_years, user_entered_years=None)
+    final_years = effective["effective_years"]
+
+    if effective.get("discrepancy_warning"):
+        logger.warning(effective.get("discrepancy_note"))
+
+    if final_years > 0:
+        evidence = stated_res.evidence if (stated_years == final_years and stated_res.evidence) else effective["evidence"]
+        return ExperienceResult(
+            status="found",
+            years=final_years,
+            source=effective["source"],
+            evidence=evidence
+        )
+    elif stated_res.status == "explicit_zero":
+        return stated_res
+    elif effective["source"] == "computed_dates" and final_years == 0 and spans:
+        return ExperienceResult(
+            status="explicit_zero",
+            years=0,
+            source="computed_dates",
+            evidence=effective["evidence"]
+        )
+
+    return stated_res
+
 
 

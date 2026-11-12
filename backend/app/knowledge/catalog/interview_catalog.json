@@ -1,0 +1,93 @@
+[
+  {
+    "id": "interview-tech-cloud-incident",
+    "domain": "tech",
+    "skill_focus": "kubernetes",
+    "question_type": "technical_behavioral",
+    "question": "Describe a production outage or container crash loop you diagnosed in Kubernetes. How did you restore service?",
+    "evaluation_criteria": [
+      "Mentions specific diagnostic commands (kubectl describe pod, logs, events)",
+      "Distinguishes between OOMKilled, probe failures (liveness/readiness), and config drift",
+      "Explains post-mortem prevention (resource limits, PDBs, alert thresholds)"
+    ],
+    "star_model_answer": {
+      "situation": "A core payment microservice entered a CrashLoopBackOff state in our production EKS cluster during peak traffic.",
+      "task": "Identify root cause immediately and restore 99.9% payment processing availability with zero transaction loss.",
+      "action": "Inspected pod events and exit code 137 (OOMKilled). Increased memory limit requests by 50% via hotfix configmap, rolled out updated deployment, and added Prometheus alerts for memory saturation.",
+      "result": "Restored cluster traffic in under 6 minutes, processed remaining queue without drops, and instituted vertical pod autoscaling."
+    }
+  },
+  {
+    "id": "interview-legal-contract-indemnity",
+    "domain": "legal",
+    "skill_focus": "contract drafting",
+    "question_type": "situational",
+    "question": "How do you handle commercial negotiations when a counterparty demands uncapped liability for general breach?",
+    "evaluation_criteria": [
+      "Demonstrates clear understanding of market-standard liability caps vs carve-outs",
+      "Balances business deal velocity against firm risk exposure",
+      "Proposes compromise structures (e.g., 2x-3x fees paid super-cap for data/privacy)"
+    ],
+    "star_model_answer": {
+      "situation": "Enterprise customer demanded uncapped indemnification for all contractual breaches in a $750K SaaS licensing agreement.",
+      "task": "Protect the company from uninsurable open-ended risk while preserving deal momentum to hit quarterly targets.",
+      "action": "Scheduled joint counsel call to isolate legitimate concerns. Carved out confidentiality and IP infringement while instituting a 2x annual contract value cap for general breaches.",
+      "result": "Final agreement executed within 4 business days with full executive approval and compliant risk allocation."
+    }
+  },
+  {
+    "id": "interview-health-clinical-triage",
+    "domain": "healthcare",
+    "skill_focus": "patient care",
+    "question_type": "behavioral",
+    "question": "Tell me about a time you noticed subtle signs of patient deterioration on telemetry before an overt code occurred.",
+    "evaluation_criteria": [
+      "Highlights continuous clinical assessment and pattern recognition",
+      "Details immediate notification protocols (RRT, SBAR communication with physician)",
+      "Emphasizes patient safety and calm leadership during escalation"
+    ],
+    "star_model_answer": {
+      "situation": "A post-operative telemetry patient had stable vitals but exhibited subtle new-onset sinus tachycardia and decreasing pulse pressure.",
+      "task": "Intervene proactively before the patient progressed into acute shock.",
+      "action": "Executed immediate bedside assessment, checked surgical dressing for internal bleeding, activated the Rapid Response Team (RRT), and communicated structured SBAR to the attending surgeon.",
+      "result": "Identified early internal hemorrhage, transferred patient safely to ICU for cauterization, resulting in full recovery with zero arrest."
+    }
+  },
+  {
+    "id": "interview-trades-safety-lockout",
+    "domain": "trades",
+    "skill_focus": "osha",
+    "question_type": "behavioral",
+    "question": "Describe a scenario where you refused to start work or stopped a job due to a critical safety hazard.",
+    "evaluation_criteria": [
+      "Prioritizes life safety and OSHA protocol over production deadlines",
+      "Applies proper Lockout/Tagout (LOTO) and zero-energy state verification",
+      "Shows constructive communication with site foreman or superintendent"
+    ],
+    "star_model_answer": {
+      "situation": "Foreman requested our crew service a 480V air handler immediately, but the primary breaker panel lacked an verified LOTO lock.",
+      "task": "Ensure zero-energy state before any technician touched internal wiring despite production schedule pressure.",
+      "action": "Politely halted the job, explained OSHA LOTO compliance requirements to the supervisor, locked out the breaker, and tested line-to-line with a calibrated multimeter to verify absence of voltage.",
+      "result": "Prevented potential arc flash injury; the foreman commended our adherence to zero-tolerance safety standards."
+    }
+  },
+  {
+    "id": "interview-finance-valuation-dcf",
+    "domain": "finance",
+    "skill_focus": "financial modeling",
+    "question_type": "technical",
+    "question": "When building a DCF model, how do you defend your choice of terminal value methodology (Exit Multiple vs Perpetuity Growth)?",
+    "evaluation_criteria": [
+      "Explains Gordon Growth formula ($TV = \\frac{FCF_{t+1}}{WACC - g}$) and implied multiple cross-check",
+      "Discusses macroeconomic reality: perpetual growth rate must not exceed long-term GDP growth (2-3%)",
+      "Demonstrates sensitivity analysis on WACC and terminal growth rates"
+    ],
+    "star_model_answer": {
+      "situation": "In evaluating a $60M acquisition target, the investment committee challenged our DCF valuation sensitivity.",
+      "task": "Establish a defensible terminal valuation supported by both perpetuity growth and exit multiple approaches.",
+      "action": "Built dual-methodology sensitivity matrices cross-checking 2.5% perpetuity growth against a 9.5x EBITDA exit multiple, testing WACC variance from 8.5% to 11.5%.",
+      "result": "Provided committee with a clear valuation range ($54M-$62M), facilitating a successful offer at $57M with strong downside protection."
+    }
+  }
+]
+

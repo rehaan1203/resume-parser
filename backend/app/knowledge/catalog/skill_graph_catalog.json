@@ -1,0 +1,275 @@
+[
+  {
+    "id": "linux_basics",
+    "name": "Linux Systems Fundamentals",
+    "domain": "tech",
+    "difficulty_tier": "beginner",
+    "prerequisites": [],
+    "description": "Core Linux operating system commands, shell navigation, permissions, file system hierarchy, process management, and basic bash scripting."
+  },
+  {
+    "id": "docker_containers",
+    "name": "Docker & Containerization",
+    "domain": "tech",
+    "difficulty_tier": "intermediate",
+    "prerequisites": ["linux_basics"],
+    "description": "Container virtualization, Dockerfile writing, multi-stage builds, container networking, volume mounting, and docker-compose multi-service setups."
+  },
+  {
+    "id": "kubernetes_orchestration",
+    "name": "Kubernetes Cluster Orchestration",
+    "domain": "tech",
+    "difficulty_tier": "advanced",
+    "prerequisites": ["linux_basics", "docker_containers"],
+    "description": "Production container orchestration using Kubernetes: Pods, Deployments, Services, ConfigMaps, Ingress, Helm packaging, and automated rollouts."
+  },
+  {
+    "id": "service_mesh",
+    "name": "Service Mesh & Cloud Traffic Engineering",
+    "domain": "tech",
+    "difficulty_tier": "master",
+    "prerequisites": ["kubernetes_orchestration"],
+    "description": "Advanced enterprise service mesh (Istio/Linkerd), mutual TLS (mTLS), distributed tracing, canary traffic routing, and ingress gateways."
+  },
+  {
+    "id": "python_programming",
+    "name": "Python Core Programming",
+    "domain": "tech",
+    "difficulty_tier": "beginner",
+    "prerequisites": [],
+    "description": "Python syntax, object-oriented programming, data structures, error handling, virtual environments, and standard library modules."
+  },
+  {
+    "id": "rest_api_design",
+    "name": "REST API Architecture & Web Services",
+    "domain": "tech",
+    "difficulty_tier": "intermediate",
+    "prerequisites": ["python_programming"],
+    "description": "Building high-performance asynchronous RESTful APIs using FastAPI or Django REST, HTTP status codes, routing, serialization, and OpenAPI documentation."
+  },
+  {
+    "id": "microservices_architecture",
+    "name": "Microservices & Distributed Architecture",
+    "domain": "tech",
+    "difficulty_tier": "advanced",
+    "prerequisites": ["rest_api_design", "docker_containers"],
+    "description": "Decomposing monolithic backends into scalable microservices, asynchronous messaging with Kafka/RabbitMQ, database per service, and API gateways."
+  },
+  {
+    "id": "numpy_pandas",
+    "name": "Data Analysis with NumPy & Pandas",
+    "domain": "tech",
+    "difficulty_tier": "beginner",
+    "prerequisites": ["python_programming"],
+    "description": "Vectorized computations with NumPy, tabular data manipulation, filtering, aggregation, and data cleaning using Python Pandas."
+  },
+  {
+    "id": "machine_learning",
+    "name": "Machine Learning Fundamentals",
+    "domain": "tech",
+    "difficulty_tier": "intermediate",
+    "prerequisites": ["python_programming", "numpy_pandas"],
+    "description": "Supervised and unsupervised ML algorithms with Scikit-Learn: linear/logistic regression, decision trees, random forests, clustering, and cross-validation."
+  },
+  {
+    "id": "deep_learning_pytorch",
+    "name": "Deep Learning & Neural Networks with PyTorch",
+    "domain": "tech",
+    "difficulty_tier": "advanced",
+    "prerequisites": ["machine_learning"],
+    "description": "Constructing and training neural networks in PyTorch, backpropagation, CNNs for computer vision, RNNs/Transformers for NLP, and GPU acceleration."
+  },
+  {
+    "id": "mlops_deployment",
+    "name": "MLOps & Production Model Deployment",
+    "domain": "tech",
+    "difficulty_tier": "advanced",
+    "prerequisites": ["deep_learning_pytorch", "docker_containers"],
+    "description": "Production ML model lifecycle: MLflow model tracking, automated retraining pipelines, Triton/FastAPI model serving, monitoring, and drift detection."
+  },
+  {
+    "id": "networking_fundamentals",
+    "name": "Computer Networking & Protocols",
+    "domain": "tech",
+    "difficulty_tier": "beginner",
+    "prerequisites": [],
+    "description": "TCP/IP model, DNS resolution, subnetting, CIDR, firewalls, TLS/SSL certificates, HTTP/HTTPS protocols, and network troubleshooting tools."
+  },
+  {
+    "id": "cloud_architecture_aws",
+    "name": "Cloud Architecture & AWS Services",
+    "domain": "tech",
+    "difficulty_tier": "intermediate",
+    "prerequisites": ["networking_fundamentals", "linux_basics"],
+    "description": "Designing multi-tier cloud applications on AWS: VPC networking, EC2 compute, S3 storage, RDS databases, IAM security roles, and CloudWatch."
+  },
+  {
+    "id": "terraform_iac",
+    "name": "Terraform & Infrastructure as Code (IaC)",
+    "domain": "tech",
+    "difficulty_tier": "advanced",
+    "prerequisites": ["cloud_architecture_aws"],
+    "description": "Declarative multi-cloud provisioning with Terraform: HCL modules, state management, remote backends, drift detection, and automated CI/CD plans."
+  },
+  {
+    "id": "financial_accounting",
+    "name": "Financial Accounting & GAAP Principles",
+    "domain": "finance",
+    "difficulty_tier": "beginner",
+    "prerequisites": [],
+    "description": "Double-entry bookkeeping, general ledger, income statements, balance sheets, cash flow statements, accrual accounting, and US GAAP rules."
+  },
+  {
+    "id": "financial_statement_analysis",
+    "name": "Financial Statement & Ratio Analysis",
+    "domain": "finance",
+    "difficulty_tier": "intermediate",
+    "prerequisites": ["financial_accounting"],
+    "description": "Evaluating corporate liquidity, solvency, profitability, Dupont analysis, working capital cycles, and footnote auditing in SEC 10-K filings."
+  },
+  {
+    "id": "dcf_valuation",
+    "name": "Discounted Cash Flow (DCF) & Valuation",
+    "domain": "finance",
+    "difficulty_tier": "intermediate",
+    "prerequisites": ["financial_statement_analysis"],
+    "description": "Unlevered free cash flow forecasting, Weighted Average Cost of Capital (WACC), terminal value calculation, and sensitivity scenario analysis."
+  },
+  {
+    "id": "lbo_financial_modeling",
+    "name": "Leveraged Buyout (LBO) & Advanced Financial Modeling",
+    "domain": "finance",
+    "difficulty_tier": "advanced",
+    "prerequisites": ["dcf_valuation"],
+    "description": "Building dynamic 3-statement financial models, debt schedules, mezzanine financing, return waterfalls (IRR/MoIC), and covenant stress-testing."
+  },
+  {
+    "id": "quantitative_risk_management",
+    "name": "Quantitative Risk & Portfolio Analysis",
+    "domain": "finance",
+    "difficulty_tier": "advanced",
+    "prerequisites": ["numpy_pandas", "financial_statement_analysis"],
+    "description": "Value at Risk (VaR), Monte Carlo simulation, modern portfolio theory, Sharpe ratio optimization, and credit default modeling in Python."
+  },
+  {
+    "id": "medical_terminology",
+    "name": "Medical Terminology & Anatomy Basics",
+    "domain": "healthcare",
+    "difficulty_tier": "beginner",
+    "prerequisites": [],
+    "description": "Clinical prefixes, suffixes, root words, anatomical planes, body systems, common pathologies, diagnostic tests, and pharmacological classes."
+  },
+  {
+    "id": "clinical_workflows",
+    "name": "Hospital Clinical Workflows & Patient Care",
+    "domain": "healthcare",
+    "difficulty_tier": "intermediate",
+    "prerequisites": ["medical_terminology"],
+    "description": "Emergency triage, patient admission, bedside nursing interventions, physician order execution, medication administration, and clinical discharge."
+  },
+  {
+    "id": "ehr_charting_systems",
+    "name": "Electronic Health Record (EHR) Systems",
+    "domain": "healthcare",
+    "difficulty_tier": "intermediate",
+    "prerequisites": ["clinical_workflows"],
+    "description": "Clinical documentation in hospital EHR systems (Epic/Cerner), clinical decision support, medication reconciliation, and order sets."
+  },
+  {
+    "id": "hipaa_compliance_governance",
+    "name": "HIPAA Compliance & Health Data Privacy",
+    "domain": "healthcare",
+    "difficulty_tier": "advanced",
+    "prerequisites": ["ehr_charting_systems"],
+    "description": "HIPAA Privacy and Security Rules, Protected Health Information (PHI) safeguards, Business Associate Agreements (BAAs), and breach reporting."
+  },
+  {
+    "id": "hl7_fhir_interoperability",
+    "name": "HL7 & FHIR Health Data Interoperability",
+    "domain": "healthcare",
+    "difficulty_tier": "master",
+    "prerequisites": ["hipaa_compliance_governance", "rest_api_design"],
+    "description": "Exchanging clinical data using HL7 v2 messaging and HL7 FHIR RESTful resources, SMART-on-FHIR app integration, and EHR integration engines."
+  },
+  {
+    "id": "legal_research_methods",
+    "name": "Legal Research & Statutory Analysis",
+    "domain": "legal",
+    "difficulty_tier": "beginner",
+    "prerequisites": [],
+    "description": "Primary and secondary legal authorities, statutory interpretation, Shepardizing case law citations, and research in Westlaw/LexisNexis."
+  },
+  {
+    "id": "contract_drafting_analysis",
+    "name": "Commercial Contract Drafting & Review",
+    "domain": "legal",
+    "difficulty_tier": "intermediate",
+    "prerequisites": ["legal_research_methods"],
+    "description": "Drafting Master Services Agreements (MSAs), representations and warranties, indemnification clauses, limitation of liability, and breach remedies."
+  },
+  {
+    "id": "regulatory_compliance",
+    "name": "Corporate Regulatory Compliance & Auditing",
+    "domain": "legal",
+    "difficulty_tier": "advanced",
+    "prerequisites": ["contract_drafting_analysis"],
+    "description": "Corporate governance programs, SEC/FINRA compliance frameworks, internal risk audits, whistleblower protocols, and regulatory defense."
+  },
+  {
+    "id": "data_privacy_gdpr",
+    "name": "Global Data Privacy & GDPR/CCPA Law",
+    "domain": "legal",
+    "difficulty_tier": "advanced",
+    "prerequisites": ["regulatory_compliance"],
+    "description": "International data transfer mechanisms, Data Protection Impact Assessments (DPIAs), GDPR/CCPA consumer rights, and privacy by design."
+  },
+  {
+    "id": "electrical_safety_acdc",
+    "name": "Electrical Safety & AC/DC Fundamentals",
+    "domain": "trades",
+    "difficulty_tier": "beginner",
+    "prerequisites": [],
+    "description": "Ohm's Law, series and parallel circuits, multimeter diagnostics, NFPA 70E electrical safety, lockout/tagout (LOTO), and grounding principles."
+  },
+  {
+    "id": "schematic_circuit_reading",
+    "name": "Electrical Schematic & Blueprint Reading",
+    "domain": "trades",
+    "difficulty_tier": "intermediate",
+    "prerequisites": ["electrical_safety_acdc"],
+    "description": "Reading industrial wiring diagrams, single-line schematics, relay logic symbols, motor control centers, and panel layout blueprints."
+  },
+  {
+    "id": "plc_ladder_logic",
+    "name": "Programmable Logic Controllers (PLC) & Ladder Logic",
+    "domain": "trades",
+    "difficulty_tier": "intermediate",
+    "prerequisites": ["schematic_circuit_reading"],
+    "description": "Programming industrial PLCs (Allen-Bradley / Siemens), ladder logic rungs, timers, counters, digital/analog I/O wiring, and motor starters."
+  },
+  {
+    "id": "scada_industrial_telemetry",
+    "name": "SCADA & Industrial Control Telemetry",
+    "domain": "trades",
+    "difficulty_tier": "advanced",
+    "prerequisites": ["plc_ladder_logic"],
+    "description": "Industrial Supervisory Control and Data Acquisition (SCADA), Human-Machine Interface (HMI) screens, Modbus/Profibus industrial protocols."
+  },
+  {
+    "id": "hvac_thermodynamic_basics",
+    "name": "HVAC Refrigeration & Thermodynamic Principles",
+    "domain": "trades",
+    "difficulty_tier": "beginner",
+    "prerequisites": [],
+    "description": "Vapor-compression refrigeration cycle, pressure-enthalpy charts, superheat/subcooling calculations, compressor diagnostics, and EPA 608."
+  },
+  {
+    "id": "bacnet_controls",
+    "name": "Building Automation & BACnet Controls",
+    "domain": "trades",
+    "difficulty_tier": "intermediate",
+    "prerequisites": ["hvac_thermodynamic_basics", "networking_fundamentals"],
+    "description": "Building Management Systems (BMS), BACnet MS/TP and IP protocols, Direct Digital Controls (DDC), variable air volume (VAV) controllers."
+  }
+]
+

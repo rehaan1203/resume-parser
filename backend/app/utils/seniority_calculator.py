@@ -1,11 +1,11 @@
 """Calculates seniority match and level deterministically."""
 from typing import Dict, Any, Optional, Tuple, Union
 
-def get_seniority_level(years: Optional[int]) -> Optional[str]:
-    """Map years of experience to a level name."""
+def get_seniority_level(years: Optional[Union[int, float]]) -> Optional[str]:
+    """Map years of experience (supporting fractional years like 1.5, 1.8) to a level name."""
     if years is None:
         return None
-    if years <= 1:
+    if years < 2:
         return "Entry"
     elif years <= 4:
         return "Mid"
@@ -16,15 +16,15 @@ def get_seniority_level(years: Optional[int]) -> Optional[str]:
     else:
         return "Executive"
 
-def _normalize_exp_input(val: Any, default_status: str) -> Tuple[str, Optional[int], Optional[str], Optional[str]]:
-    """Normalize input (ExperienceResult, int, dict, or None) to (status, years, source, evidence)."""
+def _normalize_exp_input(val: Any, default_status: str) -> Tuple[str, Optional[Union[int, float]], Optional[str], Optional[str]]:
+    """Normalize input (ExperienceResult, int, float, dict, or None) to (status, years, source, evidence)."""
     if val is None:
         return default_status, None, None, None
     if hasattr(val, "status") and hasattr(val, "years"):
         return val.status, val.years, getattr(val, "source", None), getattr(val, "evidence", None)
     if isinstance(val, dict):
         return val.get("status", default_status), val.get("years"), val.get("source"), val.get("evidence")
-    if isinstance(val, int):
+    if isinstance(val, (int, float)) and not isinstance(val, bool):
         if val == 0:
             return "explicit_zero", 0, "regex", "0 years"
         return "found", val, "regex", f"{val} years"
@@ -67,6 +67,8 @@ def calculate_seniority_score_and_gap(
             "source": cand_source,
             "candidate_source": cand_source,
             "candidate_evidence": cand_evidence,
+            "candidateSource": cand_source,
+            "candidateEvidence": cand_evidence,
             "jd_source": jd_source,
             "jd_evidence": jd_evidence
         }
@@ -91,6 +93,8 @@ def calculate_seniority_score_and_gap(
             "source": cand_source,
             "candidate_source": cand_source,
             "candidate_evidence": cand_evidence,
+            "candidateSource": cand_source,
+            "candidateEvidence": cand_evidence,
             "jd_source": jd_source,
             "jd_evidence": jd_evidence
         }
@@ -115,14 +119,17 @@ def calculate_seniority_score_and_gap(
             "source": cand_source,
             "candidate_source": cand_source,
             "candidate_evidence": cand_evidence,
+            "candidateSource": cand_source,
+            "candidateEvidence": cand_evidence,
             "jd_source": jd_source,
             "jd_evidence": jd_evidence
         }
 
-    # 4. Both candidate and JD have stated experience (found or explicit_zero)
+    # 4. Both candidate and JD have stated experience (supports whole & 1-decimal fractional years e.g. 1.5, 1.8)
     c_years = cand_years if cand_years is not None else 0
     r_years = jd_years if jd_years is not None else 0
-    gap = r_years - c_years
+    raw_gap = round(r_years - c_years, 1)
+    gap: Union[int, float] = int(round(raw_gap)) if abs(raw_gap - round(raw_gap)) < 0.05 else raw_gap
 
     if gap <= 0:
         status = "match"
@@ -132,12 +139,12 @@ def calculate_seniority_score_and_gap(
         reason = "Candidate meets or exceeds required years of experience."
     elif gap <= 2:
         status = "minor_gap"
-        score = 80 if gap == 1 else 60
+        score = int(round(100 - (gap * 20)))
         badge = "🟡 MINOR GAP"
-        reason = f"Candidate has a minor experience gap of {gap} year{'s' if gap > 1 else ''}."
+        reason = f"Candidate has a minor experience gap of {gap} year{'s' if gap != 1 else ''}."
     else:
         status = "significant_gap"
-        score = 40 if gap == 3 else 20
+        score = 40 if gap <= 3 else 20
         badge = "🔴 SIGNIFICANT GAP"
         reason = f"Candidate has a significant experience gap of {gap} years."
 
@@ -158,6 +165,8 @@ def calculate_seniority_score_and_gap(
         "source": cand_source,
         "candidate_source": cand_source,
         "candidate_evidence": cand_evidence,
+        "candidateSource": cand_source,
+        "candidateEvidence": cand_evidence,
         "jd_source": jd_source,
         "jd_evidence": jd_evidence
     }

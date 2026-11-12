@@ -1,12 +1,12 @@
 """Generates friction points, strengths, and gaps deterministically."""
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional, Union
 
 def generate_friction_and_strengths(
     matching_skills: List[str],
     missing_skills: List[str],
-    seniority_gap: int,
-    candidate_years: int,
-    required_years: int,
+    seniority_gap: Optional[Union[int, float]],
+    candidate_years: Union[int, float],
+    required_years: Union[int, float],
     domain_analysis: Dict[str, Any] = None
 ) -> Dict[str, Any]:
     """Generate friction points, strengths, and skill gaps deterministically."""

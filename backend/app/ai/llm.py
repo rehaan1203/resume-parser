@@ -4,6 +4,7 @@ from typing import List, Dict, Any
 from app.ai.client import GenAIClient
 from app.prompts.analysis_prompt import FRICTION_ANALYSIS_PROMPT, SAMPLE_ANALYSIS_PROMPT
 from app.prompts.roadmap_prompt import THIRTY_DAY_ROADMAP_PROMPT
+from app.utils.document_chunker import extract_core_sections
 from app.utils.logger import logger
 
 class LLMService:
@@ -27,10 +28,10 @@ class LLMService:
                 for fp in friction_points[:5]
             ])
             
-            # Prepare prompt
+            # Prepare prompt using prioritized semantic sections rather than naive top truncation
             prompt = FRICTION_ANALYSIS_PROMPT.format(
-                resume=resume[:3000],  # Limit to prevent token overflow
-                jd=jd[:3000],
+                resume=extract_core_sections(resume, doc_type="resume", max_chars=5000),
+                jd=extract_core_sections(jd, doc_type="jd", max_chars=5000),
                 friction_points=fp_text or "No significant friction points found"
             )
             
@@ -105,10 +106,10 @@ class LLMService:
     ) -> Dict[str, Any]:
         """Generate comprehensive analysis using Gemini."""
         try:
-            # Prepare prompt
+            # Prepare prompt using prioritized semantic sections rather than naive top truncation
             prompt = SAMPLE_ANALYSIS_PROMPT.format(
-                resume=resume[:4000],
-                jd=jd[:4000]
+                resume=extract_core_sections(resume, doc_type="resume", max_chars=6000),
+                jd=extract_core_sections(jd, doc_type="jd", max_chars=6000)
             )
             
             # Generate analysis

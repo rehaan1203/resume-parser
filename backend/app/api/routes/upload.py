@@ -59,7 +59,7 @@ async def upload_resume(
         logger.error(f"File upload failed: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to process file: {str(e)}"
+            detail="Failed to process uploaded PDF file."
         )
 
 @router.post(
@@ -81,10 +81,17 @@ async def extract_jd(
             )
         
         return result
-        
+
+    except HTTPException:
+        raise
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
     except Exception as e:
         logger.error(f"JD extraction failed: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to extract JD: {str(e)}"
+            detail="Failed to extract job description from URL."
         )

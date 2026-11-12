@@ -2,6 +2,7 @@
 from typing import List, Dict, Any
 from app.ai.client import GenAIClient
 from app.prompts.ats_prompt import ATS_OPTIMIZATION_PROMPT
+from app.utils.document_chunker import extract_core_sections
 from app.utils.logger import logger
 
 class ATSOptimizer:
@@ -27,8 +28,8 @@ class ATSOptimizer:
             ])
             
             prompt = ATS_OPTIMIZATION_PROMPT.format(
-                resume=resume[:2000],
-                jd=jd[:2000],
+                resume=extract_core_sections(resume, doc_type="resume", max_chars=4000),
+                jd=extract_core_sections(jd, doc_type="jd", max_chars=4000),
                 friction_points=fp_text or "No friction points identified"
             )
             
