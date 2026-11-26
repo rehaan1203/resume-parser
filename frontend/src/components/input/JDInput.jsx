@@ -1,23 +1,38 @@
 'use client';
 import React, { useState } from 'react';
-import { Briefcase, Link as LinkIcon, FileText } from 'lucide-react';
+import { Briefcase, Link as LinkIcon, FileText, AlertCircle } from 'lucide-react';
 import { Card } from '../shared/Card';
 import { Button } from '../shared/Button';
 import { cn } from '../../utils/cn';
+import { api } from '../../lib/api-client';
+
 export const JDInput = ({ jdText, jdUrl, onTextChange, onUrlChange, error }) => {
     const [activeTab, setActiveTab] = useState('text');
     const [isFocused, setIsFocused] = useState(false);
     const [isFetching, setIsFetching] = useState(false);
+    const [fetchError, setFetchError] = useState('');
+
     const handleFetchUrl = async () => {
         if (!jdUrl)
             return;
         setIsFetching(true);
-        // Mock fetch delay
-        setTimeout(() => {
-            onTextChange("Mock fetched job description from " + jdUrl + "\n\nRequirements:\n- Python\n- Docker\n- Kubernetes");
-            setActiveTab('text');
+        setFetchError('');
+        try {
+            const result = await api.fetchJdFromUrl(jdUrl);
+            const desc = result.description || result.text || '';
+            const title = result.title ? `${result.title}\n\n` : '';
+            if (desc) {
+                onTextChange(`${title}${desc}`.trim());
+                setActiveTab('text');
+            } else {
+                throw new Error('No job description text found at this URL');
+            }
+        } catch (err) {
+            console.error('Failed to extract JD from URL:', err);
+            setFetchError(err.message || 'Failed to extract job description from URL');
+        } finally {
             setIsFetching(false);
-        }, 1500);
+        }
     };
     return (<Card className={cn("relative overflow-hidden flex flex-col h-full transition-all duration-300", isFocused && "ring-2 ring-zinc-900 dark:ring-zinc-50 border-transparent")}>
       <div className="flex items-center justify-between mb-4">
@@ -54,8 +69,9 @@ export const JDInput = ({ jdText, jdUrl, onTextChange, onUrlChange, error }) => 
       </div>
 
       <div className="mt-2 flex justify-between items-center text-xs">
-        <span className={cn(error ? "text-red-500" : "text-gray-500")}>
-          {error || ' '}
+        <span className={cn(fetchError || error ? "text-red-500 flex items-center gap-1" : "text-gray-500")}>
+          {fetchError && <AlertCircle className="w-3.5 h-3.5 inline mr-1 flex-shrink-0" />}
+          {fetchError || error || ' '}
         </span>
         {activeTab === 'text' && (<span className={cn("font-medium", jdText.length > 10000 ? "text-red-500" : "text-gray-400")}>
             {jdText.length}/10000

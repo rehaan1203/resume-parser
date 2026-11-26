@@ -1,6 +1,6 @@
 """Unified API Models."""
 from pydantic import BaseModel, Field, field_validator, model_validator, ConfigDict
-from typing import List, Literal, Optional, Dict, Any
+from typing import List, Literal, Optional, Dict, Any, Union
 from datetime import datetime
 
 class AnalysisRequest(BaseModel):
@@ -60,10 +60,12 @@ class ScoreBreakdown(BaseModel):
 class AnalysisResponse(BaseModel):
     model_config = ConfigDict(
         populate_by_name=True,
-        json_encoders={datetime: lambda v: v.isoformat()}
+        extra='allow'
     )
     id: Optional[str] = Field(None, description="Unique analysis ID")
     overall_score: Optional[int] = Field(None, ge=0, le=100, alias="overallScore")
+    match_category: Optional[str] = Field(None, alias="matchCategory")
+    detected_role_domain: Optional[str] = Field(None, alias="detectedRoleDomain")
     skills_detected: Optional[int] = Field(None, alias="skillsDetected")
     low_confidence: Optional[bool] = Field(None, alias="lowConfidence")
     friction_points: List[Dict[str, Any]] = Field(default_factory=list, alias="frictionPoints")
@@ -105,7 +107,7 @@ class AnalysisResponse(BaseModel):
     learned_patterns_applied: Optional[int] = Field(0)
     agent_outputs: Optional[Dict[str, Any]] = Field(None)
     critic_quality_score: Optional[int] = Field(None)
-    ats_optimization_tips: Optional[List[dict]] = Field(None, alias="atsOptimizationTips")
+    ats_optimization_tips: Optional[Union[List[dict], Dict[str, Any]]] = Field(None, alias="atsOptimizationTips")
     seniority_alignment: Optional[dict] = Field(None, alias="seniorityAlignment")
     conditional_sections: Optional[dict] = Field(None, alias="conditionalSections")
 

@@ -2,7 +2,7 @@
 from typing import Dict, Any, Optional
 from app.ai.client import GenAIClient
 from app.prompts.career_prompt import CAREER_ADVICE_PROMPT, CAREER_ADVICE_RAG_PROMPT
-from app.knowledge.retriever import KnowledgeRetriever
+from app.knowledge.retriever import KnowledgeRetriever, get_retriever
 from app.utils.document_chunker import extract_core_sections
 from app.utils.logger import logger
 
@@ -11,7 +11,7 @@ class CareerAdvisor:
 
     def __init__(self, client: GenAIClient, retriever: Optional[KnowledgeRetriever] = None):
         self.client = client
-        self.retriever = retriever or KnowledgeRetriever()
+        self.retriever = retriever or get_retriever()
         self.is_fallback = False
 
     async def get_advice(

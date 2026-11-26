@@ -7,6 +7,7 @@ from app.utils.logger import logger
 
 class LinkValidator:
     """Validates links using HEAD requests."""
+    _SHARED_VALIDATION_CACHE: Dict[str, Dict[str, Any]] = {}
 
     def __init__(self, timeout: float = 5.0):
         self.timeout = timeout
@@ -22,6 +23,13 @@ class LinkValidator:
 
     async def validate(self, url: str) -> Dict[str, Any]:
         """Check if a link is working."""
+        if not url:
+            return {"url": url, "status": "broken", "status_code": 404, "final_url": None}
+
+        # Check in-memory validation cache
+        if url in self._SHARED_VALIDATION_CACHE:
+            return self._SHARED_VALIDATION_CACHE[url]
+
         # Reject search query URLs (they return 200 but aren't specific resources)
         if "youtube.com/results" in url or "google.com/search" in url:
             return {
@@ -67,35 +75,43 @@ class LinkValidator:
             
             # Check if link is working (or blocked by bot protection)
             if 200 <= response.status_code < 400 or response.status_code in [401, 403]:
-                return {
+                res = {
                     "url": url,
                     "status": "valid",
                     "status_code": response.status_code,
                     "final_url": str(response.url)
                 }
             else:
-                return {
+                res = {
                     "url": url,
                     "status": "broken",
                     "status_code": response.status_code,
                     "final_url": None
                 }
+            self._SHARED_VALIDATION_CACHE[url] = res
+            return res
                 
         except httpx.TimeoutException:
             logger.warning(f"Timeout while validating: {url}")
-            return {"url": url, "status": "timeout", "status_code": None, "final_url": None}
+            res = {"url": url, "status": "timeout", "status_code": None, "final_url": None}
+            self._SHARED_VALIDATION_CACHE[url] = res
+            return res
             
         except httpx.HTTPStatusError as e:
-            return {
+            res = {
                 "url": url,
                 "status": "error",
                 "status_code": e.response.status_code,
                 "final_url": None
             }
+            self._SHARED_VALIDATION_CACHE[url] = res
+            return res
             
         except Exception as e:
             logger.error(f"Unexpected error validating {url}: {e}")
-            return {"url": url, "status": "error", "status_code": None, "final_url": None}
+            res = {"url": url, "status": "error", "status_code": None, "final_url": None}
+            self._SHARED_VALIDATION_CACHE[url] = res
+            return res
 
     async def validate_many(self, urls: List[str], max_concurrent: int = 10) -> Dict[str, Dict[str, Any]]:
         """

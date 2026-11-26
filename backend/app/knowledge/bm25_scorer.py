@@ -24,12 +24,16 @@ class BM25Index:
         self.term_freqs: Dict[str, Counter] = {}
 
     def tokenize(self, text: str) -> List[str]:
-        """Tokenize text preserving hyphenated terms and alphanumeric acronyms."""
+        """Tokenize text preserving hyphenated terms, symbols (+, #), dots, and slashes.
+        Preserves technical tokens like 'c++', 'c#', '.net', 'node.js', 'ci/cd', 'tcp/ip'
+        without hardcoding specific programming languages.
+        """
         if not text:
             return []
         cleaned = text.lower()
-        # Keep alphanumeric words and common acronym delimiters like hyphens (e.g. 'cert-in')
-        tokens = re.findall(r"[a-z0-9]+(?:-[a-z0-9]+)*", cleaned)
+        # Preserve compound tokens containing letters, digits, +, #, and inner separators (-, ., /)
+        # Handles leading dots (e.g. '.net') via optional leading dot
+        tokens = re.findall(r"\.?[a-z0-9+#]+(?:[-/.][a-z0-9+#]+)*", cleaned)
         return tokens
 
     def index_resources(self, resources: List[VerifiedResource]):

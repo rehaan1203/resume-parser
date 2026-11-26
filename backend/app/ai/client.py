@@ -269,18 +269,39 @@ class GenAIClient:
 
     @staticmethod
     def _parse_json_payload(response_text: str) -> Dict[str, Any]:
-        """Extract and parse a JSON object cleanly from raw LLM output."""
+        """Extract and parse a JSON object or array cleanly from raw LLM output with balanced boundary extraction."""
         import json
         import re
 
         cleaned = (response_text or "").strip()
-        if cleaned.startswith("```"):
+        # Remove outer markdown code fences if present
+        if "```" in cleaned:
             cleaned = re.sub(r"^```(?:json)?\s*", "", cleaned, flags=re.IGNORECASE)
             cleaned = re.sub(r"\s*```$", "", cleaned)
+            cleaned = re.sub(r"```(?:json)?", "", cleaned, flags=re.IGNORECASE).strip()
 
+        # Try direct parse first
+        try:
+            return json.loads(cleaned)
+        except json.JSONDecodeError:
+            pass
+
+        # Try object extraction
         json_match = re.search(r"\{.*\}", cleaned, re.DOTALL)
         if json_match:
-            return json.loads(json_match.group())
+            try:
+                return json.loads(json_match.group())
+            except json.JSONDecodeError:
+                pass
+
+        # Try array extraction
+        array_match = re.search(r"\[.*\]", cleaned, re.DOTALL)
+        if array_match:
+            try:
+                return json.loads(array_match.group())
+            except json.JSONDecodeError:
+                pass
+
         return json.loads(cleaned)
 
     async def generate_structured_content(

@@ -1,7 +1,10 @@
 """PDF parsing for resume extraction."""
 import io
 from typing import Optional, Dict, List
-from PyPDF2 import PdfReader
+try:
+    from pypdf import PdfReader
+except ImportError:
+    from PyPDF2 import PdfReader
 import pdfplumber
 from app.utils.logger import logger
 
@@ -9,38 +12,37 @@ class PDFParser:
     """Extract text and structure from PDF resumes."""
     
     async def extract_text(self, pdf_bytes: bytes) -> Optional[str]:
-        """Extract text from PDF bytes."""
+        """Extract text from PDF bytes using pdfplumber with PyPDF2 fallback."""
+        text_parts = []
         try:
-            # Try pdfplumber first (better for complex layouts)
             with pdfplumber.open(io.BytesIO(pdf_bytes)) as pdf:
-                text = ""
                 for page in pdf.pages:
                     page_text = page.extract_text()
                     if page_text:
-                        text += page_text + "\n"
-                
-                if text.strip():
-                    logger.info(f"PDF extraction successful: {len(text)} chars")
-                    return text
-            
-            # Fallback to PyPDF2
+                        text_parts.append(page_text)
+            if text_parts and any(len(p.strip()) > 0 for p in text_parts):
+                extracted = "\n".join(text_parts).strip()
+                logger.info(f"PDF extraction successful (pdfplumber): {len(extracted)} chars")
+                return extracted
+        except Exception as e:
+            logger.warning(f"pdfplumber extraction error: {e}. Falling back to PyPDF2...")
+
+        try:
             reader = PdfReader(io.BytesIO(pdf_bytes))
-            text = ""
+            fallback_parts = []
             for page in reader.pages:
                 page_text = page.extract_text()
                 if page_text:
-                    text += page_text + "\n"
-            
-            if text.strip():
-                logger.info(f"PDF extraction successful (fallback): {len(text)} chars")
-                return text
-            
-            logger.warning("No text extracted from PDF")
-            return None
-            
+                    fallback_parts.append(page_text)
+            if fallback_parts and any(len(p.strip()) > 0 for p in fallback_parts):
+                extracted = "\n".join(fallback_parts).strip()
+                logger.info(f"PDF extraction successful (PyPDF2 fallback): {len(extracted)} chars")
+                return extracted
         except Exception as e:
-            logger.error(f"PDF extraction failed: {e}")
-            return None
+            logger.error(f"PyPDF2 fallback extraction failed: {e}")
+
+        logger.warning("No text extracted from PDF")
+        return None
     
     async def extract_sections(self, pdf_bytes: bytes) -> Dict[str, str]:
         """Extract structured sections from PDF resume."""
@@ -56,15 +58,15 @@ class PDFParser:
         """Extract PDF metadata."""
         try:
             reader = PdfReader(io.BytesIO(pdf_bytes))
-            metadata = reader.metadata
+            metadata = reader.metadata or {}
             return {
-                "title": metadata.get('/Title', ''),
-                "author": metadata.get('/Author', ''),
-                "subject": metadata.get('/Subject', ''),
-                "creator": metadata.get('/Creator', ''),
-                "producer": metadata.get('/Producer', ''),
+                "title": metadata.get('/Title', '') or '',
+                "author": metadata.get('/Author', '') or '',
+                "subject": metadata.get('/Subject', '') or '',
+                "creator": metadata.get('/Creator', '') or '',
+                "producer": metadata.get('/Producer', '') or '',
                 "pages": len(reader.pages)
             }
         except Exception as e:
             logger.error(f"Metadata extraction failed: {e}")
-            return {}
+            return {"pages": 0}

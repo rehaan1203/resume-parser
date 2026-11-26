@@ -7,6 +7,7 @@ without saving files to disk (zero disk I/O, strict privacy preservation).
 
 import asyncio
 import base64
+from datetime import datetime
 import html
 import io
 from pathlib import Path
@@ -245,7 +246,7 @@ class OutlookService:
         next_url: Optional[str] = (
             f"{self.GRAPH_BASE_URL}/users/{self.mailbox_email}/mailFolders/Inbox/messages"
             f"?$filter=isRead eq false&$orderby=receivedDateTime desc&$top={limit}"
-            f"&$select=id,subject,bodyPreview,body,from,receivedDateTime,hasAttachments"
+            f"&$select=id,subject,bodyPreview,body,from,receivedDateTime,hasAttachments,internetMessageHeaders"
         )
         collected: List[Dict[str, Any]] = []
 
@@ -379,15 +380,91 @@ class OutlookService:
         clean_body = ""
         if body_type.lower() == "html":
             soup = BeautifulSoup(body_content, "html.parser")
+            for tag in soup(["style", "script", "head", "meta", "link"]):
+                tag.decompose()
             clean_body = soup.get_text(separator="\n").strip()
         else:
             clean_body = body_content.strip()
 
-        if len(clean_body) >= 60:
-            logger.info("Extracted resume text directly from email body")
+        cleaned_resume_body = self._clean_email_body_for_resume(clean_body)
+        if len(cleaned_resume_body) >= 60:
+            logger.info("Extracted cleaned resume text directly from email body")
+            return cleaned_resume_body, "email_body"
+        elif len(clean_body) >= 60:
+            logger.info("Extracted resume text directly from raw email body")
             return clean_body, "email_body"
 
         return "", "none"
+
+    @staticmethod
+    def _clean_email_body_for_resume(raw_text: str) -> str:
+        """
+        Clean raw email body text to extract substantive resume content.
+        Strips:
+        1. Forwarded email headers (e.g. -----Original Message-----, From:, Sent:, To:)
+        2. Quoted reply lines (lines starting with > or 'On ... wrote:')
+        3. Mobile device signatures (Sent from my iPhone, Get Outlook, etc.)
+        4. Boilerplate corporate confidentiality disclaimers
+        5. Casual greetings at the start (e.g. 'Dear Hiring Team, please find my resume below')
+        """
+        if not raw_text:
+            return ""
+
+        text = raw_text.replace("\r\n", "\n").replace("\r", "\n")
+
+        # 1. Strip forwarded header blocks at the beginning or within text
+        # (e.g. From: ... \n Sent: ... \n To: ... \n Subject: ...)
+        text = re.sub(
+            r"(?im)^\s*(?:from|sent|to|date|subject):\s*[^\n]+\r?\n(?:\s*(?:from|sent|to|date|subject):\s*[^\n]+\r?\n?)+",
+            "",
+            text,
+        )
+        # Strip header separators like "-----Original Message-----", "-----Forwarded Message-----", "_____"
+        text = re.sub(
+            r"(?im)^\s*[-_]{4,}\s*(?:original|forwarded)?\s*message\s*[-_]{4,}\s*$",
+            "",
+            text,
+        )
+        text = re.sub(r"(?m)^\s*_{5,}\s*$", "", text)
+        # Strip reply introductory lines like "On Mon, Nov 24, 2026 ... wrote:"
+        text = re.sub(r"(?im)^\s*on\s+[a-z]{3,9},?\s+[a-z]{3,9}\s+\d{1,2},?\s+\d{4}[^\n]+wrote:\s*$", "", text)
+
+        # 2. Strip quoted reply lines (lines starting with >)
+        lines = [line for line in text.splitlines() if not line.strip().startswith(">")]
+        text = "\n".join(lines)
+
+        # 3. Strip corporate confidentiality disclaimers at the bottom
+        disclaimer_markers = [
+            r"(?i)\bthis (?:email|e-mail|message|communication) and any (?:files|attachments) transmitted with it are confidential\b",
+            r"(?i)\bthis (?:email|e-mail|message) is intended (?:only|solely) for the (?:use of the )?(?:individual|addressee)\b",
+            r"(?i)\bif you (?:have received|are not) (?:this|the intended) (?:email|recipient)\b",
+            r"(?i)\bdisclaimer\b[:\s]",
+            r"(?i)\bconfidentiality notice\b",
+            r"(?i)\bconfidentiality disclaimer\b",
+        ]
+        for d_pat in disclaimer_markers:
+            m = re.search(d_pat, text)
+            if m and m.start() >= 50:
+                text = text[:m.start()].strip()
+
+        # 4. Strip mobile device signatures anywhere
+        sig_patterns = [
+            r"(?im)^\s*sent from my (?:iphone|ipad|galaxy|android|mobile device)[^\n]*$",
+            r"(?im)^\s*get outlook for (?:ios|android|windows)[^\n]*$",
+            r"(?im)^\s*sent from (?:mail for windows|outlook mobile)[^\n]*$",
+        ]
+        for s_pat in sig_patterns:
+            text = re.sub(s_pat, "", text)
+
+        # 5. Clean conversational leading greetings (e.g. 'Dear Hiring Team, please find my resume below')
+        text = re.sub(
+            r"^(?:\s*(?:hi|hello|dear|to)\s+(?:hiring\s+team|hr|recruiter|sir|madam|all|team)?[^\n]*\n+)?(?:\s*(?:please\s+find|attached\s+is|submitting|here\s+is)\s+[^\n]*(?:resume|profile|details|application)[^\n]*\n+)?",
+            "",
+            text,
+            flags=re.IGNORECASE
+        ).strip()
+
+        return text.strip()
 
     async def extract_resume_text_in_memory_async(
         self,
@@ -407,7 +484,7 @@ class OutlookService:
                     page_text = page.extract_text()
                     if page_text:
                         text_parts.append(page_text)
-            if text_parts:
+            if text_parts and any(len(p.strip()) > 0 for p in text_parts):
                 return "\n".join(text_parts)
         except Exception as e:
             logger.warning(f"pdfplumber in-memory extraction encountered error: {e}. Trying PyPDF2...")
@@ -439,6 +516,16 @@ class OutlookService:
                     row_text = " | ".join(cell.text.strip() for cell in row.cells if cell.text.strip())
                     if row_text:
                         parts.append(row_text)
+            # Dynamic extraction of text boxes / frames (w:txbxContent)
+            try:
+                from docx.text.paragraph import Paragraph
+                for txbx in doc.element.xpath('.//*[local-name()="txbxContent"]'):
+                    for p_elem in txbx.xpath('.//*[local-name()="p"]'):
+                        p_obj = Paragraph(p_elem, doc)
+                        if p_obj.text.strip():
+                            parts.append(p_obj.text.strip())
+            except Exception as tb_err:
+                logger.debug(f"DOCX text box extraction skipped: {tb_err}")
             return "\n".join(parts)
         except Exception as e:
             logger.error(f"python-docx in-memory extraction failed: {e}")
@@ -464,14 +551,14 @@ class OutlookService:
     def infer_target_role_and_jd(self, subject: str, body_text: str) -> str:
         """
         Infer the target role or job context from the email subject line or body.
-        Constructs a clean target JD context for the orchestrator.
+        Constructs an enriched, domain-appropriate target JD context for the orchestrator.
         """
-        combined = f"{subject} {body_text[:300]}"
+        combined = f"{subject} {body_text[:500]}"
 
         # Regex patterns to capture job title
         patterns = [
             r"(?:application|applying|applying for|applied for|role of|job application:?)\s*(?:for|as)?\s*([A-Za-z0-9\s\-\/\#\+]{3,40}?)(?:[\.\,\-\|\(]|$)",
-            r"(?:role|position|profile)\s*:\s*([A-Za-z0-9\s\-\/\#\+]{3,40}?)(?:[\.\,\-\|\(]|$)",
+            r"(?:role|position|profile|target)\s*:\s*([A-Za-z0-9\s\-\/\#\+]{3,40}?)(?:[\.\,\-\|\(]|$)",
             r"([A-Za-z0-9\s\-\/\#\+]{3,35})\s*(?:-|–|—|\|)\s*(?:resume|cv|application)",
             r"(?:resume|cv)\s*(?:-|–|—|\|)\s*([A-Za-z0-9\s\-\/\#\+]{3,35})",
         ]
@@ -483,24 +570,42 @@ class OutlookService:
                 candidate_title = match.group(1).strip()
                 # Exclude trivial non-title words
                 if len(candidate_title) > 3 and not any(
-                    w in candidate_title.lower() for w in ["resume", "application", "hello", "dear", "hiring", "job", "please find"]
+                    w in candidate_title.lower() for w in ["resume", "application", "hello", "dear", "hiring", "job", "please find", "candidate"]
                 ):
                     target_title = candidate_title
+                    break
+
+        # Fallback: scan top 5 non-empty lines of body_text for candidate headline role
+        if not target_title and body_text:
+            non_empty_lines = [l.strip() for l in body_text.splitlines() if l.strip()][:5]
+            for l in non_empty_lines:
+                pipe_split = [p.strip() for p in re.split(r"[-–—|:]", l) if p.strip()]
+                for cand_part in pipe_split:
+                    if 5 <= len(cand_part) <= 45 and not any(ch in cand_part for ch in ["@", "http", ".com"]):
+                        words = cand_part.split()
+                        if 1 <= len(words) <= 5 and any(rw in cand_part.lower() for rw in [
+                            "engineer", "developer", "architect", "analyst", "specialist", "scientist",
+                            "manager", "lead", "counsel", "officer", "consultant", "nurse", "coordinator"
+                        ]):
+                            target_title = cand_part
+                            break
+                if target_title:
                     break
 
         if target_title:
             return (
                 f"Job Title: {target_title}.\n"
                 f"Target Role: {target_title}.\n"
-                f"Requirements: Proven professional competence and domain expertise in {target_title}. "
-                f"Demonstrated execution of core industry responsibilities, technical standards, and domain workflows."
+                f"Requirements: Proven professional competence, domain expertise, and execution experience in {target_title}. "
+                f"Demonstrated execution of core industry responsibilities, technical standards, architectural practices, "
+                f"and domain workflows. Strong hands-on problem solving, end-to-end project delivery, and cross-functional collaboration."
             )
 
         # Generic domain-adaptable fallback JD
         return (
             "Job Title: Domain Professional / Specialist.\n"
             "Requirements: Comprehensive proficiency in domain-specific competencies, industry best practices, "
-            "problem-solving capabilities, and verified technical execution standards."
+            "problem-solving capabilities, verified technical execution standards, and project ownership."
         )
 
     def extract_candidate_name(
@@ -614,6 +719,12 @@ class OutlookService:
                     "emailAddress": {
                         "address": to_address,
                     }
+                }
+            ],
+            "internetMessageHeaders": [
+                {
+                    "name": "X-Friction-Agent-Reply",
+                    "value": "true",
                 }
             ],
         }
@@ -1063,6 +1174,7 @@ class OutlookService:
     <style>
         :root {{ color-scheme: light dark; supported-color-schemes: light dark; }}
         body {{ margin: 0; padding: 0; background-color: #F4F4F5; color: #18181B; }}
+        table {{ border-collapse: collapse; mso-table-lspace: 0pt; mso-table-rspace: 0pt; }}
         @media (prefers-color-scheme: dark) {{
             .fm-bg {{ background-color: #09090B !important; }}
             .fm-card {{ background-color: #18181B !important; border-color: #27272A !important; }}
@@ -1121,7 +1233,7 @@ class OutlookService:
                                 In adherence to strict privacy standards, your resume was streamed in RAM and never written to disk storage.
                             </div>
                             <div class="fm-muted" style="font-size: 11px; color: #A1A1AA;">
-                                &copy; 2026 Friction Matcher &bull; Confidential &bull; Generated for candidate {html.escape(candidate_name)}
+                                &copy; {datetime.now().year} Friction Matcher &bull; Confidential &bull; Generated for candidate {html.escape(candidate_name)}
                             </div>
                         </td>
                     </tr>
@@ -1318,13 +1430,13 @@ class OutlookService:
         def _metric_row(label_text: str, pct: Any, bar_color: str) -> str:
             return f"""
             <div style="margin-bottom: 12px;">
-                <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 5px;">
+                <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 5px; mso-table-lspace: 0pt; mso-table-rspace: 0pt;">
                     <tr>
                         <td align="left" class="fm-body" style="font-size: 13px; font-weight: 500; color: #3F3F46;">{label_text}</td>
                         <td align="right" class="fm-text" style="font-size: 13px; font-weight: 700; color: #18181B; white-space: nowrap; padding-left: 8px;">{pct}%</td>
                     </tr>
                 </table>
-                <table width="100%" cellpadding="0" cellspacing="0" bgcolor="#E4E4E7" class="fm-track" style="background-color: #E4E4E7; border-radius: 4px; height: 7px;">
+                <table width="100%" cellpadding="0" cellspacing="0" bgcolor="#E4E4E7" class="fm-track" style="background-color: #E4E4E7; border-radius: 4px; height: 7px; mso-table-lspace: 0pt; mso-table-rspace: 0pt;">
                     <tr>
                         <td width="{pct}%" bgcolor="{bar_color}" style="background-color: {bar_color}; height: 7px; border-radius: 4px; font-size: 1px; line-height: 1px;">&nbsp;</td>
                         <td style="font-size: 1px; line-height: 1px;">&nbsp;</td>
@@ -1657,13 +1769,19 @@ class OutlookService:
         subj_lower = subject.lower().strip()
         body_preview_lower = str(message.get("bodyPreview") or "").lower()
         body_content_lower = str(message.get("body", {}).get("content") or "").lower()
+        headers_list = message.get("internetMessageHeaders") or []
+        has_friction_reply_header = any(
+            str(h.get("name", "")).lower() == "x-friction-agent-reply"
+            for h in headers_list if isinstance(h, dict)
+        )
         is_bounce_back = any(
             subj_lower.startswith(b) for b in [
                 "undeliverable:", "delivery status notification", "failed:", "failure notice", "returned mail"
             ]
         )
         is_self_reply = (
-            subj_lower.startswith("your talent evaluation & roadmap:")
+            has_friction_reply_header
+            or subj_lower.startswith("your talent evaluation & roadmap:")
             or "resume attachment required" in subj_lower
             or "friction matcher ai talent suite" in body_preview_lower
             or "friction matcher ai talent suite" in body_content_lower

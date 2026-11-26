@@ -16,8 +16,8 @@ def clean_text(text: str) -> str:
     # Normalize whitespace
     text = re.sub(r'\s+', ' ', text)
     
-    # Remove special characters (keep alphanumeric, common punctuation)
-    text = re.sub(r'[^\w\s.,;:?!-]', ' ', text)
+    # Remove special characters (keep alphanumeric, common punctuation, and tech symbols like +, #, /)
+    text = re.sub(r'[^\w\s.,;:?!/+#-]', ' ', text)
     
     # Remove extra whitespace again
     text = re.sub(r'\s+', ' ', text)

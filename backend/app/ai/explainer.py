@@ -1,6 +1,6 @@
 """Phase 3 LLM Explainer - generates explanations based on fixed deterministic data."""
 import asyncio
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Union, Optional
 from app.ai.client import GenAIClient
 from app.utils.logger import logger
 from app.prompts.analysis_prompt import build_executive_summary_prompt, build_mismatch_prompt
@@ -183,10 +183,37 @@ class Phase3Explainer:
             logger.error(f"Failed to generate roadmap: {e}")
             if "roadmap" not in self.degraded_sections:
                 self.degraded_sections.append("roadmap")
+            fallback_weeks = []
+            for wk_i in range(1, weeks_count + 1):
+                skill_focus = gaps[wk_i - 1] if wk_i - 1 < len(gaps) else (gaps[0] if gaps else "Domain Competencies")
+                fallback_weeks.append({
+                    "week": wk_i,
+                    "focus": f"Week {wk_i}: {skill_focus} Mastery & Practical Application",
+                    "days": [
+                        {
+                            "day": (wk_i - 1) * 7 + 1,
+                            "action": f"Study foundational documentation, official standards, and architecture for {skill_focus}.",
+                            "resources": [skill_focus],
+                            "estimated_time": "2 hours"
+                        },
+                        {
+                            "day": (wk_i - 1) * 7 + 3,
+                            "action": f"Build an applied, portfolio-grade project prototype demonstrating {skill_focus}.",
+                            "resources": [skill_focus],
+                            "estimated_time": "3 hours"
+                        },
+                        {
+                            "day": (wk_i - 1) * 7 + 5,
+                            "action": f"Conduct review, write unit tests, and prepare technical interview talking points for {skill_focus}.",
+                            "resources": [skill_focus],
+                            "estimated_time": "2 hours"
+                        }
+                    ]
+                })
             fallback = {
                 "type": gap_type,
                 "title": f"Fallback Roadmap ({weeks_count} Weeks)",
-                "weeks": []
+                "weeks": fallback_weeks
             }
             if verified_resources:
                 fallback["verified_resources"] = verified_resources
@@ -194,11 +221,11 @@ class Phase3Explainer:
 
     async def generate_seniority_alignment(
         self,
-        years_experience: int,
-        required_years: int,
+        years_experience: Union[int, float],
+        required_years: Union[int, float],
         your_level: str,
         required_level: str,
-        gap: int,
+        gap: Union[int, float],
         domain_analysis: Dict[str, Any] = None
     ) -> Dict[str, Any]:
         """Generate detailed seniority alignment context and recommendations."""

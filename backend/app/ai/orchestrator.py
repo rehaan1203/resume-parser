@@ -321,10 +321,34 @@ class DeterministicOrchestrator:
                 from app.utils.logger import logger
                 logger.warning(f"Phase 3 insight '{key}' generation encountered error: {res}. Using graceful fallback.")
                 if key == "holistic":
+                    cand_lvl = seniority_analysis.get("your_level") or "Entry"
+                    req_lvl = seniority_analysis.get("required_level") or "Entry"
+                    sn_gap = seniority_analysis.get("gap") if seniority_analysis.get("gap") is not None else 0
+                    cand_yrs = seniority_analysis.get("years_experience") or 0
+                    req_yrs = seniority_analysis.get("required_years") or 0
+                    status_badge = "✅ PERFECT MATCH" if sn_gap <= 0 else ("🟡 MINOR GAP" if sn_gap <= 2 else "🔴 SIGNIFICANT GAP")
                     phase3_results[key] = {
                         "executive_summary": f"Candidate profile evaluated against target role requirements. Technical alignment score: {overall_score}%.",
-                        "ats_optimization": {"summary": "ATS optimization complete.", "keywords": missing_skills[:5], "phrasing": [], "formatting_tips": []},
-                        "seniority_alignment": {"alignment_summary": "Candidate experience evaluated against role seniority.", "advice": "Target key role competencies."},
+                        "ats_optimization": {
+                            "summary": "ATS optimization complete.",
+                            "keywords": missing_skills[:5],
+                            "phrasing": [],
+                            "formatting_tips": [
+                                "Use clear section headings matching the target job description.",
+                                "Highlight measurable accomplishments with quantitative impact."
+                            ]
+                        },
+                        "seniority_alignment": {
+                            "summary": f"Candidate experience ({cand_yrs} yrs, {cand_lvl}) evaluated against role requirement ({req_yrs} yrs, {req_lvl}).",
+                            "next_steps": ["Target key required competencies with portfolio deliverables."],
+                            "your_level": cand_lvl,
+                            "your_years": cand_yrs,
+                            "required_level": req_lvl,
+                            "required_years": req_yrs,
+                            "gap": sn_gap,
+                            "alignment_status": "match" if sn_gap <= 0 else ("minor_gap" if sn_gap <= 2 else "significant_gap"),
+                            "alignment_badge": status_badge
+                        },
                     }
                 elif key == "roadmap":
                     phase3_results[key] = {"type": "standard_upskill", "title": "Targeted Upskilling Roadmap", "weeks": []}
@@ -367,6 +391,14 @@ class DeterministicOrchestrator:
             else (100 if domain_analysis.get("is_exact_match", False) else (85 if domain_analysis.get("is_compatible_transition", False) else (100 if domain_analysis.get("domain_match") else 0)))
         )
 
+        # Match category label
+        if overall_score >= 75:
+            match_category = "Strong Fit"
+        elif overall_score >= 50:
+            match_category = "Competitive Match"
+        else:
+            match_category = "Needs Targeted Upskilling"
+
         # Build raw payload
         raw_payload = {
             "id": f"ai-{uuid.uuid4().hex[:8]}",
@@ -374,6 +406,8 @@ class DeterministicOrchestrator:
             "low_confidence": low_confidence,
             "executive_summary": executive_summary,
             "overall_score": overall_score,
+            "match_category": match_category,
+            "detected_role_domain": target_role or domain_analysis.get("detected_role_domain"),
             "score_breakdown": {
                 "skills_match": skills_score,
                 "seniority_match": seniority_analysis.get("seniority_score"),
@@ -388,6 +422,7 @@ class DeterministicOrchestrator:
                 "low_confidence": low_confidence
             },
             "seniority_analysis": seniority_analysis,
+            "seniority_alignment": seniority_analysis,
             "seniority_assessed": seniority_analysis.get("seniority_assessed", True),
             "seniority_reason": seniority_analysis.get("seniority_reason"),
             "seniority_status": seniority_analysis.get("seniority_status"),
@@ -396,6 +431,8 @@ class DeterministicOrchestrator:
             "skill_gaps": friction_data["skill_gaps"],
             "ats_optimization": ats_optimization,
             "roadmap": roadmap,
+            "verified_resources": roadmap.get("verified_resources", []) if isinstance(roadmap, dict) else [],
+            "upskill_roadmap": roadmap.get("weeks", []) if isinstance(roadmap, dict) else [],
             "degraded_sections": getattr(explainer, "degraded_sections", [])
         }
         

@@ -1,6 +1,7 @@
 """Pydantic schemas for the RAG Knowledge Base."""
 from enum import Enum
 from typing import List, Optional, Dict, Any
+from datetime import date, datetime
 from pydantic import BaseModel, Field, HttpUrl
 
 class ResourceType(str, Enum):
@@ -38,11 +39,11 @@ class VerifiedResource(BaseModel):
     difficulty: DifficultyLevel = Field(default=DifficultyLevel.BEGINNER)
     duration_hours: Optional[float] = Field(None, description="Estimated duration in hours")
     is_free: bool = Field(default=True, description="True if freely accessible without paywall")
-    verified_at: str = Field(default="2026-10-29", description="Date verified active (ISO)")
+    verified_at: str = Field(default_factory=lambda: date.today().isoformat(), description="Date verified active (ISO)")
     health_status: str = Field(default="active", description="active, degraded, or broken")
     last_checked_at: Optional[str] = Field(None, description="Timestamp of last health verification")
     description: str = Field(..., description="Syllabus overview or video description for semantic matching")
-    publication_year: Optional[int] = Field(default=2024, description="Year of publication/major revision")
+    publication_year: Optional[int] = Field(default_factory=lambda: datetime.now().year, description="Year of publication/major revision")
     chapters: List[VideoChapter] = Field(default_factory=list, description="Timestamped video chapters")
     child_chunks: List[ChildChunk] = Field(default_factory=list, description="Granular sub-topic chunks for hierarchical retrieval")
     active_timestamp_url: Optional[str] = Field(default=None, description="URL with deep-linked timestamp anchor")

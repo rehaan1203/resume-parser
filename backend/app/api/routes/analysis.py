@@ -30,7 +30,7 @@ async def analyze_resume(
     try:
         logger.info(f"Analysis request received for resume length: {len(request.resume)}")
         
-        request_data = request.dict()
+        request_data = getattr(request, "model_dump", getattr(request, "dict"))()
         
         if settings.use_ai_service:
             logger.info("Using DeterministicOrchestrator for analysis")
@@ -85,7 +85,8 @@ async def analyze_resume_stream(
             try:
                 from app.ai.orchestrator import DeterministicOrchestrator
                 orchestrator = DeterministicOrchestrator()
-                result = await orchestrator.process(request.dict(), progress_callback)
+                req_dict = getattr(request, "model_dump", getattr(request, "dict"))()
+                result = await orchestrator.process(req_dict, progress_callback)
                 # Serialize using the response model to ensure camelCase keys (by_alias)
                 from app.models.api_models import AnalysisResponse
                 from fastapi.encoders import jsonable_encoder

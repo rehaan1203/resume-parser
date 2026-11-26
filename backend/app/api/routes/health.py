@@ -32,7 +32,7 @@ async def readiness_check():
     """
     return {
         "status": "ready",
-        "mock_mode": settings.use_mock,
+        "ai_enabled": settings.use_ai_service,
         "timestamp": get_utc_timestamp()
     }
 

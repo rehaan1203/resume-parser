@@ -322,6 +322,16 @@ class SharePointService:
                         row_txt = " | ".join(cell.text.strip() for cell in row.cells if cell.text.strip())
                         if row_txt:
                             parts.append(row_txt)
+                # Dynamic extraction of text boxes / frames (w:txbxContent)
+                try:
+                    from docx.text.paragraph import Paragraph
+                    for txbx in doc.element.xpath('.//*[local-name()="txbxContent"]'):
+                        for p_elem in txbx.xpath('.//*[local-name()="p"]'):
+                            p_obj = Paragraph(p_elem, doc)
+                            if p_obj.text.strip():
+                                parts.append(p_obj.text.strip())
+                except Exception as tb_err:
+                    logger.debug(f"DOCX text box extraction skipped: {tb_err}")
                 return "\n".join(parts)
             except Exception as e:
                 logger.warning(f"Error parsing DOCX JD '{filename}': {e}")

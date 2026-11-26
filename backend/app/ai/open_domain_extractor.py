@@ -200,6 +200,14 @@ class OpenDomainExtractor:
         resume_year_nums = [int(y) for y in re.findall(r'\b(\d+)\+?\s*(?:years?|yrs?)\b', resume_lower) if y.isdigit()]
         max_resume_stated_yrs = max(resume_year_nums) if resume_year_nums else 0
 
+        # If no explicit year claim was stated in text, compute verified tenure from date spans
+        if max_resume_stated_yrs == 0 and resume_text:
+            try:
+                from app.utils.date_span_calculator import calculate_experience_from_dates
+                max_resume_stated_yrs = int(calculate_experience_from_dates(resume_text))
+            except Exception:
+                pass
+
         for req in requirements:
             name = str(req["name"]).strip()
             name_lower = name.lower()

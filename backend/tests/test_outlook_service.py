@@ -864,6 +864,207 @@ def test_prose_false_positive_removal_and_fractional_seniority(mock_outlook_serv
     assert "1.3 yrs (Entry)" in html_out
 
 
+def test_email_body_hygiene_cleaning(mock_outlook_service):
+    """Verify email body cleaner removes forward headers, reply trails, mobile signatures, and disclaimers."""
+    dirty_email = """
+    From: Recruiter <recruiter@company.com>
+    Sent: Monday, November 24, 2026 10:00 AM
+    To: friction.agent@example.com
+    Subject: FW: Candidate Application
+
+    > Forwarded message from candidate:
+    > Please review Aarav Sharma's resume below.
+
+    Hi Team,
+    Please find my resume attached below for the Senior DevOps role:
+
+    Aarav Sharma
+    Senior DevOps Engineer
+    Skills: Terraform, Kubernetes, AWS, CI/CD, Python, Docker
+    Experience: 6 years managing multi-region Kubernetes clusters.
+    Education: B.Tech Computer Science
+
+    Sent from my iPhone
+
+    CONFIDENTIALITY NOTICE: This transmission may contain confidential and privileged information.
+    Any unauthorized review, use, disclosure, or distribution is prohibited. If you are not the intended recipient,
+    please destroy all copies.
+    """
+    cleaned = mock_outlook_service._clean_email_body_for_resume(dirty_email)
+
+    assert "From: Recruiter" not in cleaned
+    assert "Forwarded message" not in cleaned
+    assert "Sent from my iPhone" not in cleaned
+    assert "CONFIDENTIALITY NOTICE" not in cleaned
+    assert "unauthorized review" not in cleaned
+    assert "Aarav Sharma" in cleaned
+    assert "Senior DevOps Engineer" in cleaned
+    assert "Terraform, Kubernetes, AWS" in cleaned
+
+    # Test via extract_resume_text_in_memory
+    msg = {"id": "msg-clean-1", "body": {"content": dirty_email}}
+    text, source = mock_outlook_service.extract_resume_text_in_memory(msg, [])
+    assert source == "email_body"
+    assert "Sent from my iPhone" not in text
+    assert "Aarav Sharma" in text
+
+
+def test_target_role_inference_from_candidate_headline(mock_outlook_service):
+    """Verify generic subject ('Application') infers target role from candidate resume headline."""
+    body_with_headline = """
+    Sarah Connor
+    Principal Cloud Security Engineer
+    Summary: 8+ years experience in Zero Trust, AWS IAM, GuardDuty, and Kubernetes hardening.
+    Skills: Cloud Security, Zero Trust, Okta, IAM, Terraform.
+    """
+    inferred_jd = mock_outlook_service.infer_target_role_and_jd("Job Application", body_with_headline)
+    assert "Principal Cloud Security Engineer" in inferred_jd
+    assert len(inferred_jd) >= 250
+    assert "Proven professional competence" in inferred_jd
+
+
+@pytest.mark.asyncio
+async def test_loop_protection_with_friction_header_and_tokens(mock_outlook_service):
+    """Verify self-reply loop protection detects outbound X-Friction-Agent-Reply header and tokens."""
+    # 1. Message with X-Friction-Agent-Reply header
+    msg_with_header = {
+        "id": "msg-self-1",
+        "subject": "Talent Evaluation Results",
+        "from": {"emailAddress": {"address": "friction.agent@example.com", "name": "Friction Agent"}},
+        "internetMessageHeaders": [
+            {"name": "X-Friction-Agent-Reply", "value": "true"},
+            {"name": "MIME-Version", "value": "1.0"},
+        ],
+        "body": {"content": "Here is your report"},
+    }
+    dummy_orch = MagicMock()
+    with patch.object(mock_outlook_service, "mark_message_as_read", AsyncMock(return_value=True)) as mock_read:
+        res = await mock_outlook_service.process_candidate_message(msg_with_header, dummy_orch)
+        assert res["status"] == "ignored_system_email"
+        assert res["reason"] == "self_evaluation_reply"
+        mock_read.assert_awaited_once_with("msg-self-1")
+        dummy_orch.process.assert_not_called()
+
+    # 2. Verify send_reply_email attaches the X-Friction-Agent-Reply header
+    with patch.object(mock_outlook_service, "_get_auth_headers", AsyncMock(return_value={"Authorization": "Bearer fake"})), \
+         patch.object(mock_outlook_service, "_graph_request", AsyncMock(return_value=MagicMock(status_code=202))) as mock_req:
+        await mock_outlook_service.send_reply_email(
+            to_address="candidate@example.com",
+            subject="Your Talent Evaluation & Roadmap: Cloud Engineer",
+            html_body="<p>Test report</p>",
+        )
+        assert mock_req.called
+        call_kwargs = mock_req.call_args[1]
+        payload = call_kwargs["json"]
+        headers_sent = payload["message"].get("internetMessageHeaders", [])
+        assert any(h["name"] == "X-Friction-Agent-Reply" and h["value"] == "true" for h in headers_sent)
+
+
+def test_outlook_html_mso_table_lspace_rspace(mock_outlook_service):
+    """Verify generated HTML email includes MSO Word engine table reset styles."""
+    html_out = mock_outlook_service.generate_professional_html_report(
+        candidate_name="Elena Rostova",
+        target_role="Full Stack Developer",
+        analysis={
+            "overall_score": 82,
+            "score_breakdown": {"skills_match": 85, "seniority_match": 80, "domain_match": 82},
+            "strengths": ["React", "FastAPI"],
+            "skill_gaps": ["Docker"],
+        },
+    )
+    assert "mso-table-lspace: 0pt; mso-table-rspace: 0pt;" in html_out
+    assert "border-collapse: collapse;" in html_out
+
+
+def test_html_email_style_and_script_sanitization(mock_outlook_service):
+    """Verify HTML email parsing decomposes <style> and <script> tags to prevent CSS pollution."""
+    html_body_with_css = """
+    <html>
+    <head>
+        <style>
+            <!--/* Font Definitions */
+            @font-face {font-family:"Cambria Math"; panose-1:2 4 5 3 5 4 6 3 2 4;}
+            p.MsoNormal, li.MsoNormal, div.MsoNormal {margin:0in; font-size:11.0pt; font-family:"Calibri",sans-serif;}
+            -->
+        </style>
+        <script>console.log("analytics tracking");</script>
+    </head>
+    <body>
+        <p>Aarav Sharma</p>
+        <p>Principal Cloud Architect</p>
+        <p>Skills: Kubernetes, Terraform, AWS, Python, CI/CD</p>
+        <p>Experience: 8 years building large-scale distributed architectures.</p>
+    </body>
+    </html>
+    """
+    msg = {
+        "id": "msg-html-clean",
+        "body": {
+            "contentType": "html",
+            "content": html_body_with_css
+        }
+    }
+    text, source = mock_outlook_service.extract_resume_text_in_memory(msg, [])
+    assert source == "email_body"
+    assert "Cambria Math" not in text
+    assert "MsoNormal" not in text
+    assert "font-family" not in text
+    assert "analytics tracking" not in text
+    assert "Aarav Sharma" in text
+    assert "Principal Cloud Architect" in text
+    assert "Kubernetes, Terraform, AWS" in text
+
+
+def test_docx_text_box_extraction(mock_outlook_service):
+    """Verify in-memory DOCX extraction captures text inside Word text boxes (w:txbxContent)."""
+    import docx
+    from docx.oxml import parse_xml
+    from docx.oxml.ns import nsdecls
+
+    doc = docx.Document()
+    doc.add_paragraph("Aarav Sharma - Senior Engineer")
+    doc.add_paragraph("Experience: 5 years in backend engineering.")
+
+    # Inject a Word text frame / text box element (w:txbxContent)
+    txbx_xml = parse_xml(
+        f'<w:txbxContent {nsdecls("w")}>'
+        f'  <w:p><w:r><w:t>Core Skills: Go, Kubernetes, Terraform, gRPC</w:t></w:r></w:p>'
+        f'</w:txbxContent>'
+    )
+    doc._element.body.append(txbx_xml)
+
+    buf = io.BytesIO()
+    doc.save(buf)
+    extracted = mock_outlook_service._extract_docx_in_memory(buf.getvalue())
+
+    assert "Aarav Sharma - Senior Engineer" in extracted
+    assert "Core Skills: Go, Kubernetes, Terraform, gRPC" in extracted
+
+
+def test_pdf_zero_text_fallthrough_to_pypdf2(mock_outlook_service):
+    """Verify that when pdfplumber yields empty text, extraction falls through cleanly to PyPDF2."""
+    fallback_text = "Jane Doe\nStaff Machine Learning Engineer\n10 years experience in PyTorch and MLOps."
+
+    mock_empty_page = MagicMock()
+    mock_empty_page.extract_text.return_value = "   \n  "  # Empty / whitespace-only
+    mock_pdfplumber_pdf = MagicMock()
+    mock_pdfplumber_pdf.pages = [mock_empty_page]
+    mock_pdfplumber_pdf.__enter__.return_value = mock_pdfplumber_pdf
+
+    with patch("pdfplumber.open", return_value=mock_pdfplumber_pdf), \
+         patch("PyPDF2.PdfReader") as mock_pypdf2:
+        mock_pypdf2_page = MagicMock()
+        mock_pypdf2_page.extract_text.return_value = fallback_text
+        mock_pypdf2.return_value.pages = [mock_pypdf2_page]
+
+        result = mock_outlook_service._extract_pdf_in_memory(b"%PDF-dummy")
+        assert "Jane Doe" in result
+        assert "Staff Machine Learning Engineer" in result
+        assert mock_pypdf2.called
+
+
+
+
 
 
 

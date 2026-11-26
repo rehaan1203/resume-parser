@@ -269,6 +269,18 @@ export const RoadmapDisplay = ({ roadmap }) => {
 
         const weeks = Array.from(new Set(flatItems.map(item => item.week))).sort();
 
+        if (flatItems.length === 0) {
+            return (
+                <div className="mt-12 p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-[#09090b]/50 text-center">
+                    <Calendar className="w-8 h-8 text-zinc-400 mx-auto mb-2" />
+                    <h3 className="font-bold text-lg text-zinc-900 dark:text-zinc-100">Learning Roadmap</h3>
+                    <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1 max-w-lg mx-auto">
+                        Your profile demonstrates strong alignment with target requirements. Specific skill gap roadmaps are not required for this role.
+                    </p>
+                </div>
+            );
+        }
+
         return (
             <div className="mt-12 space-y-6">
                 <div className="space-y-3 border-b border-zinc-200 dark:border-zinc-800 pb-4">

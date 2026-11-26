@@ -48,9 +48,10 @@ class TaxonomyService:
         if clean in self._synonym_map:
             return self._synonym_map[clean]
         
-        # Substring / boundary match for known citations (e.g. '45 cfr part 164')
+        # Boundary-aware match for known citations (e.g. '45 cfr part 164')
+        from app.knowledge.crag_evaluator import word_boundary_match
         for alias, canonical in self._synonym_map.items():
-            if len(alias) >= 4 and alias in clean:
+            if len(alias) >= 4 and word_boundary_match(alias, clean):
                 return canonical
 
         return clean

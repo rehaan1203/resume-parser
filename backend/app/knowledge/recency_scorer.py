@@ -6,12 +6,13 @@ fields (e.g. Python 2, React class components, old cloud SDKs) while preserving 
 foundational principles in law, accounting, and trades safety.
 """
 import math
+from datetime import datetime
 from typing import Optional
 from app.knowledge.models import VerifiedResource
 from app.config import settings
 from app.utils.logger import logger
 
-CURRENT_YEAR = 2026
+CURRENT_YEAR = datetime.now().year
 
 class RecencyScorer:
     """Calculates recency multipliers and deprecation status for learning resources."""

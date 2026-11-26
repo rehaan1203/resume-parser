@@ -11,6 +11,7 @@ from app.knowledge.geo_router import get_geo_router
 from app.knowledge.semantic_cache import get_semantic_cache
 from app.knowledge.cdc_bus import get_cdc_bus, CDCEvent
 from app.knowledge.ragas_evaluator import get_ragas_evaluator
+from app.knowledge.crag_evaluator import word_boundary_match
 from app.config import settings
 from app.utils.logger import logger
 
@@ -95,7 +96,13 @@ class KnowledgeRetriever:
                 if vec:
                     await self.vector_store.upsert(res, vec[0])
                 get_bm25_index().index_resources(list(self._parent_doc_map.values()))
-                logger.info(f"KnowledgeRetriever CDC: live-updated resource '{res.id}'")
+                
+                # Invalidate semantic cache entries containing this resource or its skills
+                from app.knowledge.semantic_cache import get_semantic_cache
+                cache = get_semantic_cache()
+                cache.invalidate_resource(res.id)
+                cache.invalidate_tags(list(res.skills_covered) + [res.domain, res.id])
+                logger.info(f"KnowledgeRetriever CDC: live-updated resource '{res.id}' and invalidated cache")
             except Exception as e:
                 logger.error(f"Error handling CDC event in KnowledgeRetriever: {e}")
 
@@ -153,7 +160,7 @@ class KnowledgeRetriever:
             score = 0
             if target_domain and diag.domain.lower() == target_domain:
                 score += 1
-            overlap = sum(1 for s in diag.associated_skills if any(cs in s.lower() or s.lower() in cs for cs in clean_skills))
+            overlap = sum(1 for s in diag.associated_skills if any(word_boundary_match(cs, s.lower()) or word_boundary_match(s.lower(), cs) for cs in clean_skills))
             if overlap > 0:
                 score += overlap * 2
                 matched.append((score, diag))
@@ -281,7 +288,7 @@ class KnowledgeRetriever:
 
                 # Target domain bonus & strictness check
                 domain_match_bonus = 0.2 if (domain_filter and resource.domain.lower() == domain_filter) else 0.0
-                tag_match = 1.0 if any(s.lower() in skill_clean or skill_clean in s.lower() for s in resource.skills_covered) else (0.5 if (skill_clean in resource.description.lower() or skill_clean in resource.title.lower()) else 0.0)
+                tag_match = 1.0 if any(word_boundary_match(s.lower(), skill_clean) or word_boundary_match(skill_clean, s.lower()) for s in resource.skills_covered) else (0.5 if (word_boundary_match(skill_clean, resource.description.lower()) or word_boundary_match(skill_clean, resource.title.lower())) else 0.0)
 
                 # Candidate engagement / popularity bonus from click telemetry
                 clicks = IN_MEMORY_CLICK_COUNTS.get(resource.id, 0)
@@ -304,7 +311,7 @@ class KnowledgeRetriever:
                             resource.matched_chapter = ch.title
                             break
 
-                matched = [s for s in resource.skills_covered if s.lower() in skill_clean or skill_clean in s.lower()]
+                matched = [s for s in resource.skills_covered if word_boundary_match(s.lower(), skill_clean) or word_boundary_match(skill_clean, s.lower())]
                 scored_results.append(ResourceSearchResult(
                     resource=resource,
                     score=min(1.0, hybrid_score),
@@ -511,7 +518,7 @@ class KnowledgeRetriever:
             if target_domain and tmpl.domain == target_domain:
                 score += 2
             for s in tmpl.skills:
-                if any(s in cs or cs in s for cs in clean_skills):
+                if any(word_boundary_match(s, cs) or word_boundary_match(cs, s) for cs in clean_skills):
                     score += 3
             if score > 0:
                 matched.append((tmpl, score))
@@ -571,7 +578,7 @@ class KnowledgeRetriever:
             if target_domain and guide.domain == target_domain:
                 score += 2
             focus = guide.skill_focus.lower()
-            if any(focus in cs or cs in focus for cs in clean_skills):
+            if any(word_boundary_match(focus, cs) or word_boundary_match(cs, focus) for cs in clean_skills):
                 score += 4
             if score > 0:
                 matched.append((guide, score))

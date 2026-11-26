@@ -1,4 +1,4 @@
-"""LLM reasoning service using Gemini."""
+"""LLM reasoning service utilizing multi-provider inference (Groq / Mistral)."""
 import json
 from typing import List, Dict, Any
 from app.ai.client import GenAIClient
@@ -19,7 +19,7 @@ class LLMService:
         jd: str,
         friction_points: List[Dict[str, any]]
     ) -> Dict[str, Any]:
-        """Analyze friction points using Gemini."""
+        """Analyze friction points using the active LLM client."""
         try:
             # Format friction points for prompt
             fp_text = "\n".join([
@@ -104,7 +104,7 @@ class LLMService:
         resume: str,
         jd: str
     ) -> Dict[str, Any]:
-        """Generate comprehensive analysis using Gemini."""
+        """Generate comprehensive analysis using the active LLM client."""
         try:
             # Prepare prompt using prioritized semantic sections rather than naive top truncation
             prompt = SAMPLE_ANALYSIS_PROMPT.format(
@@ -137,10 +137,10 @@ class LLMService:
                     {
                         "category": "skills",
                         "severity": "critical",
-                        "description": "Missing Python experience",
-                        "suggestion": "Add Python projects"
+                        "description": "Key required competencies require additional practical depth.",
+                        "suggestion": "Focus on strengthening core requirements and hands-on deliverables."
                     }
                 ],
-                "skill_gaps": ["Python", "Docker"],
-                "strengths": ["Cloud architecture", "Leadership"]
+                "skill_gaps": [],
+                "strengths": []
             }

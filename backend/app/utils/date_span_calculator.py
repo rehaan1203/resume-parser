@@ -4,7 +4,8 @@ Implements 7 date span formats, interval union overlap deduplication,
 internship credit rules, and stated vs computed experience precedence.
 """
 import re
-from datetime import date
+import calendar
+from datetime import date, datetime
 from enum import Enum
 from typing import List, Tuple, Optional, Dict, Any, Union
 from dataclasses import dataclass
@@ -56,8 +57,18 @@ SEASON_MAP = {
     "winter": (12, 1, 2, 28),
 }
 
-DEFAULT_FROZEN_DATE = date(2026, 10, 28)
+QUARTER_MAP = {
+    "q1": (1, 1, 3, 31),
+    "q2": (4, 1, 6, 30),
+    "q3": (7, 1, 9, 30),
+    "q4": (10, 1, 12, 31),
+}
+
 _REFERENCE_DATE_OVERRIDE: Optional[date] = None
+
+def _month_end_day(year: int, month: int) -> int:
+    """Return the exact last day of the month, dynamically accounting for leap years."""
+    return calendar.monthrange(year, month)[1]
 
 def get_reference_date() -> date:
     """Return configured frozen reference date (for hermetic tests) or today's date in production."""
@@ -101,7 +112,17 @@ def _parse_single_date(text: str, is_end: bool = False, ref_date: Optional[date]
             return date(y + (1 if s_name == "winter" else 0), em, ed)
         return date(y, sm, sd)
 
-    # 2. Month'YY (e.g. Jul'19, Jan'20)
+    # 2. Business Quarter YYYY (e.g. Q1 2021, Q3 2023)
+    quarter_match = re.match(r'^(q[1-4])\s+(\d{4})$', t)
+    if quarter_match:
+        q_name, year_str = quarter_match.groups()
+        y = int(year_str)
+        sm, sd, em, ed = QUARTER_MAP[q_name]
+        if is_end:
+            return date(y, em, ed)
+        return date(y, sm, sd)
+
+    # 3. Month'YY (e.g. Jul'19, Jan'20)
     month_apostrophe = re.match(r"^([a-z]+)['’](\d{2})$", t)
     if month_apostrophe:
         m_name, y_short = month_apostrophe.groups()
@@ -109,20 +130,29 @@ def _parse_single_date(text: str, is_end: bool = False, ref_date: Optional[date]
             m = MONTH_MAP[m_name]
             y = 2000 + int(y_short)
             if is_end:
-                return date(y, m, 28 if m == 2 else (30 if m in (4, 6, 9, 11) else 31))
+                return date(y, m, _month_end_day(y, m))
             return date(y, m, 1)
 
-    # 3. MM/YYYY or MM.YYYY (e.g. 07/2019, 9.2019)
-    slash_dot = re.match(r"^(\d{1,2})[/.](\d{4})$", t)
-    if slash_dot:
-        m = int(slash_dot.group(1))
-        y = int(slash_dot.group(2))
-        if 1 <= m <= 12 and 1950 <= y <= 2100:
+    # 4. ISO YYYY-MM, YYYY/MM, or YYYY.MM (e.g. 2021-06, 2023/11, 2020.08)
+    iso_match = re.match(r"^(\d{4})[-/.](0?[1-9]|1[0-2])$", t)
+    if iso_match:
+        y = int(iso_match.group(1))
+        m = int(iso_match.group(2))
+        if 1950 <= y <= 2100:
             if is_end:
-                return date(y, m, 28 if m == 2 else (30 if m in (4, 6, 9, 11) else 31))
+                return date(y, m, _month_end_day(y, m))
             return date(y, m, 1)
 
-    # 4. Month YYYY (e.g. July 2019, Jan 2021)
+    # 5. MM/YYYY, MM-YYYY, or MM.YYYY (e.g. 07/2019, 06-2021, 9.2019)
+    slash_dash = re.match(r"^(0?[1-9]|1[0-2])[-/.](19\d{2}|20\d{2})$", t)
+    if slash_dash:
+        m = int(slash_dash.group(1))
+        y = int(slash_dash.group(2))
+        if is_end:
+            return date(y, m, _month_end_day(y, m))
+        return date(y, m, 1)
+
+    # 6. Month YYYY (e.g. July 2019, Jan 2021)
     month_year = re.match(r"^([a-z]+)\s+(\d{4})$", t)
     if month_year:
         m_name, y_str = month_year.groups()
@@ -130,10 +160,10 @@ def _parse_single_date(text: str, is_end: bool = False, ref_date: Optional[date]
             m = MONTH_MAP[m_name]
             y = int(y_str)
             if is_end:
-                return date(y, m, 28 if m == 2 else (30 if m in (4, 6, 9, 11) else 31))
+                return date(y, m, _month_end_day(y, m))
             return date(y, m, 1)
 
-    # 5. YYYY (e.g. 2019)
+    # 7. YYYY (e.g. 2019)
     year_only = re.match(r"^(\d{4})$", t)
     if year_only:
         y = int(year_only.group(1))
@@ -156,8 +186,12 @@ def parse_date_span_string(span_str: str, span_type: SpanType = SpanType.EMPLOYM
         y2 = int(str(y1)[:2] + academic_match.group(2))
         return DateSpan(raw_text=span_str, start_date=date(y1, 1, 1), end_date=date(y2, 12, 31), span_type=span_type)
 
-    # Split by standard separators: -, –, —, to, until
-    parts = re.split(r'\s*(?:[-–—]|to|until)\s*', span_str.strip(), maxsplit=1)
+    # Split by standard range separators: -, –, —, to, until
+    # Prefer whitespace-delimited hyphens or Unicode dashes to avoid splitting inside hyphenated dates (e.g. 2021-06)
+    split_match = re.split(r'\s+(?:[-–—]|to|until)\s+|\s*([–—]|to|until)\s*', span_str.strip(), maxsplit=1)
+    parts = [p.strip() for p in split_match if p and p.strip() not in ("–", "—", "to", "until")]
+    if len(parts) != 2:
+        parts = re.split(r'\s*(?:[-–—]|to|until)\s*', span_str.strip(), maxsplit=1)
     if len(parts) != 2:
         return None
 
@@ -179,8 +213,12 @@ def extract_all_date_spans_from_text(text: str) -> List[DateSpan]:
         r"\b(?:[a-zA-Z]+['’]\d{2})\s*(?:[-–—]|to)\s*(?:present|current|now|ongoing|till date|[a-zA-Z]+['’]\d{2})\b",
         # Month YYYY - Present / Month YYYY
         r"\b(?:[a-zA-Z]+\s+\d{4})\s*(?:[-–—]|to)\s*(?:present|current|now|ongoing|till date|[a-zA-Z]+\s+\d{4})\b",
-        # MM/YYYY - Present / MM/YYYY
-        r"\b(?:\d{1,2}[/.]\d{4})\s*(?:[-–—]|to)\s*(?:present|current|now|ongoing|till date|\d{1,2}[/.]\d{4})\b",
+        # ISO YYYY-MM / YYYY/MM - Present / ISO YYYY-MM
+        r"\b(?:\d{4}[-/.](?:0?[1-9]|1[0-2]))\s*(?:[-–—]|to)\s*(?:present|current|now|ongoing|till date|\d{4}[-/.](?:0?[1-9]|1[0-2]))\b",
+        # MM/YYYY, MM-YYYY - Present / MM/YYYY
+        r"\b(?:(?:0?[1-9]|1[0-2])[-/.](?:19\d{2}|20\d{2}))\s*(?:[-–—]|to)\s*(?:present|current|now|ongoing|till date|(?:0?[1-9]|1[0-2])[-/.](?:19\d{2}|20\d{2}))\b",
+        # Business Quarter Q1-Q4 YYYY - Present / Quarter
+        r"\b(?:[qQ][1-4]\s+\d{4})\s*(?:[-–—]|to)\s*(?:present|current|now|ongoing|till date|[qQ][1-4]\s+\d{4})\b",
         # Season YYYY - Season YYYY / Present
         r"\b(?:(?:Spring|Summer|Fall|Autumn|Winter)\s+\d{4})\s*(?:[-–—]|to)\s*(?:present|current|now|ongoing|till date|(?:Spring|Summer|Fall|Autumn|Winter)\s+\d{4})\b",
         # YYYY - Present / YYYY
@@ -324,12 +362,24 @@ def compute_effective_experience(
     discrepancy_warning = False
     discrepancy_note = None
 
+    has_present_span = any(
+        bool(re.search(r'\b(present|current|now|ongoing|till date|to date)\b', s.raw_text, re.IGNORECASE))
+        for s in spans
+    )
+
     if stated_years is not None and t_computed > 0:
         if abs(stated_years - t_computed) > 2.0:
             discrepancy_warning = True
             discrepancy_note = f"Candidate claims {stated_years} years, but date intervals sum to {t_computed} years."
-        final_years = max(stated_years, t_computed)
-        source = "stated_max" if final_years == stated_years else "computed_dates"
+        
+        # When an open-ended "Present" span inflates elapsed calendar time beyond stated tenure,
+        # prioritize the candidate's explicit stated experience
+        if t_computed > stated_years and has_present_span:
+            final_years = stated_years
+            source = "stated"
+        else:
+            final_years = max(stated_years, t_computed)
+            source = "stated_max" if final_years == stated_years else "computed_dates"
     elif stated_years is not None:
         final_years = stated_years
         source = "stated"

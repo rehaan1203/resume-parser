@@ -94,6 +94,17 @@ def test_stated_vs_computed_precedence_and_discrepancy():
     assert res["discrepancy_warning"] is True
     assert "Candidate claims 8.0 years" in res["discrepancy_note"]
 
+def test_present_span_does_not_inflate_stated_tenure():
+    # Candidate explicitly claims 1.4 years of experience, but lists "Jun 2023 - Present"
+    # To reference date (Oct 2026), Jun 2023 - Present = ~3.4 years.
+    # The explicit stated tenure of 1.4 years should prevail over dynamic calendar time.
+    spans = [
+        DateSpan("Jun 2023 - Present", date(2023, 6, 1), date(2026, 10, 28), SpanType.EMPLOYMENT),
+    ]
+    res = compute_effective_experience(spans, stated_years=1.4)
+    assert res["effective_years"] == 1.4
+    assert res["source"] == "stated"
+
 def test_user_entered_override():
     spans = [
         DateSpan("Jan 2021 - Dec 2023", date(2021, 1, 1), date(2023, 12, 31), SpanType.EMPLOYMENT),
@@ -171,4 +182,55 @@ def test_fractional_years_preserved_intelligently():
     assert sen["your_level"] == "Entry"
     assert sen["gap"] == 1.5
     assert sen["seniority_score"] == 70
+
+
+def test_parse_iso_and_hyphen_date_spans():
+    """Verify ISO format (YYYY-MM, YYYY/MM) and hyphen format (MM-YYYY) are parsed accurately."""
+    span_iso = parse_date_span_string("2021-06 - 2023-11")
+    assert span_iso is not None
+    assert span_iso.start_date == date(2021, 6, 1)
+    assert span_iso.end_date == date(2023, 11, 30)
+
+    span_slash = parse_date_span_string("2020/05 – 2022/10")
+    assert span_slash is not None
+    assert span_slash.start_date == date(2020, 5, 1)
+    assert span_slash.end_date == date(2022, 10, 31)
+
+    span_hyphen = parse_date_span_string("06-2021 – 11-2023")
+    assert span_hyphen is not None
+    assert span_hyphen.start_date == date(2021, 6, 1)
+    assert span_hyphen.end_date == date(2023, 11, 30)
+
+
+def test_parse_business_quarter_spans():
+    """Verify business quarters (Q1-Q4 YYYY) are mapped to accurate calendar quarter intervals."""
+    span_q1_q4 = parse_date_span_string("Q1 2021 – Q4 2022")
+    assert span_q1_q4 is not None
+    assert span_q1_q4.start_date == date(2021, 1, 1)
+    assert span_q1_q4.end_date == date(2022, 12, 31)
+
+    span_q2_present = parse_date_span_string("Q2 2023 - Present")
+    assert span_q2_present is not None
+    assert span_q2_present.start_date == date(2023, 4, 1)
+    assert span_q2_present.end_date == get_reference_date()
+
+
+def test_extract_all_date_spans_with_iso_and_quarters():
+    """Verify extraction and union deduplication on resumes containing ISO and business quarter date formats."""
+    resume_text = """
+    EXPERIENCE
+    Senior Cloud Architect | Enterprise Cloud Services
+    2021-06 – 2024-06
+
+    Lead Systems Engineer | FinTech Systems
+    Q1 2019 – Q4 2020
+    """
+    spans = extract_all_date_spans_from_text(resume_text)
+    assert len(spans) == 2
+    assert any(s.start_date == date(2021, 6, 1) and s.end_date == date(2024, 6, 30) for s in spans)
+    assert any(s.start_date == date(2019, 1, 1) and s.end_date == date(2020, 12, 31) for s in spans)
+
+    eff = compute_effective_experience(spans)
+    assert eff["effective_years"] == 5.1
+
 

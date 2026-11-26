@@ -38,6 +38,7 @@ async def lifespan(app: FastAPI):
     try:
         import nltk
         nltk.download('punkt', quiet=True)
+        nltk.download('punkt_tab', quiet=True)
         nltk.download('stopwords', quiet=True)
         logger.info("NLTK data downloaded successfully")
     except Exception as e:

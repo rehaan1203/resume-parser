@@ -2,6 +2,20 @@
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
+function extractErrorMessage(error, fallback = 'Analysis failed') {
+    if (!error) return fallback;
+    if (typeof error === 'string') return error;
+    if (Array.isArray(error.detail)) {
+        return error.detail.map(d => {
+            const field = Array.isArray(d.loc) ? d.loc.filter(k => k !== 'body').join('.') : '';
+            return field ? `${field}: ${d.msg}` : d.msg;
+        }).join('; ');
+    }
+    if (typeof error.detail === 'string') return error.detail;
+    if (error.message) return error.message;
+    return fallback;
+}
+
 export const api = {
     analyze: async (data) => {
         // data contains: { resume, jdText, jdUrl, includeRoadmap }
@@ -24,7 +38,7 @@ export const api = {
             let errorMsg = 'Analysis failed';
             try {
                 const error = await response.json();
-                errorMsg = error.detail || errorMsg;
+                errorMsg = extractErrorMessage(error, errorMsg);
             } catch (e) {
                 // Ignore parse error
             }
@@ -37,12 +51,51 @@ export const api = {
         // Matches frontend expectations: overallScore, frictionPoints, etc.
         return result;
     },
-    resetCache: async () => {
-        const response = await fetch(`${API_BASE}/api/v1/cache/reset`, {
-            method: 'DELETE',
+    uploadResume: async (file) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        const response = await fetch(`${API_BASE}/api/v1/upload/resume`, {
+            method: 'POST',
+            body: formData,
         });
         if (!response.ok) {
-            console.error('Failed to reset cache');
+            let errorMsg = 'Failed to upload and parse resume PDF';
+            try {
+                const error = await response.json();
+                errorMsg = extractErrorMessage(error, errorMsg);
+            } catch (e) {
+                // Ignore parse error
+            }
+            throw new Error(errorMsg);
+        }
+        return await response.json();
+    },
+    fetchJdFromUrl: async (url) => {
+        const response = await fetch(`${API_BASE}/api/v1/upload/jd?url=${encodeURIComponent(url)}`, {
+            method: 'POST',
+        });
+        if (!response.ok) {
+            let errorMsg = 'Failed to extract job description from URL';
+            try {
+                const error = await response.json();
+                errorMsg = extractErrorMessage(error, errorMsg);
+            } catch (e) {
+                // Ignore parse error
+            }
+            throw new Error(errorMsg);
+        }
+        return await response.json();
+    },
+    resetCache: async () => {
+        try {
+            const response = await fetch(`${API_BASE}/api/v1/cache/reset`, {
+                method: 'DELETE',
+            });
+            if (!response.ok) {
+                // Non-blocking if admin key required in prod
+            }
+        } catch (e) {
+            // Ignore network or admin header notice on local reset
         }
     },
     analyzeStream: async (data, onProgress) => {
@@ -69,7 +122,7 @@ export const api = {
                 let errorMsg = 'Analysis failed';
                 try {
                     const error = await response.json();
-                    errorMsg = error.detail || errorMsg;
+                    errorMsg = extractErrorMessage(error, errorMsg);
                 } catch (e) {
                     // Ignore parse error
                 }
@@ -151,7 +204,7 @@ export const api = {
             let errorMsg = 'Failed to generate transition plan.';
             try {
                 const error = await response.json();
-                errorMsg = error.detail || errorMsg;
+                errorMsg = extractErrorMessage(error, errorMsg);
             } catch (e) {
                 // Ignore parse error
             }

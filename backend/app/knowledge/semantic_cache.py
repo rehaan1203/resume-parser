@@ -131,14 +131,44 @@ class SemanticVectorCache:
         self._entries.append(entry)
         logger.debug(f"SemanticCache stored '{query_text}' (domain={clean_dom}, jur={clean_jur}, ttl={ttl}s)")
 
-    def invalidate_tags(self, tags: List[str]):
-        """Invalidate entries matching any of the specified skill tags or domains."""
-        clean_tags = [t.lower().strip() for t in tags]
+    def invalidate_resource(self, resource_id: str):
+        """Invalidate entries that contain the specified resource in their results."""
+        clean_id = (resource_id or "").strip()
+        if not clean_id:
+            return
+        initial_len = len(self._entries)
         self._entries = [
             e for e in self._entries
-            if not any(t in e.query_text.lower() or t == e.domain for t in clean_tags)
+            if not any(getattr(getattr(r, "resource", r), "id", None) == clean_id for r in e.results)
         ]
-        logger.debug(f"SemanticCache invalidated matching tags: {tags}")
+        evicted = initial_len - len(self._entries)
+        logger.debug(f"SemanticCache evicted {evicted} entries containing resource '{clean_id}'")
+
+    def invalidate_tags(self, tags: List[str]):
+        """Invalidate entries matching any of the specified skill tags, domains, or contained resource IDs."""
+        clean_tags = [t.lower().strip() for t in tags if t and t.strip()]
+        if not clean_tags:
+            return
+        initial_len = len(self._entries)
+        
+        def _entry_matches_tags(e: SemanticCacheEntry) -> bool:
+            # Query text or domain match
+            if any(t in e.query_text.lower() or t == e.domain for t in clean_tags):
+                return True
+            # Results contained resources match
+            for r in e.results:
+                res = getattr(r, "resource", r)
+                res_id = getattr(res, "id", "").lower()
+                if res_id in clean_tags:
+                    return True
+                res_skills = [s.lower() for s in getattr(res, "skills_covered", [])]
+                if any(t in res_skills for t in clean_tags):
+                    return True
+            return False
+
+        self._entries = [e for e in self._entries if not _entry_matches_tags(e)]
+        evicted = initial_len - len(self._entries)
+        logger.debug(f"SemanticCache invalidated {evicted} entries matching tags: {clean_tags}")
 
     def clear(self):
         """Flush the cache."""

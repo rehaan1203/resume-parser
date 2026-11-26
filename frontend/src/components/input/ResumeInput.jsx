@@ -1,18 +1,39 @@
 'use client';
 import React, { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { FileText, Upload, Clipboard } from 'lucide-react';
+import { FileText, Upload, Clipboard, Loader2, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card } from '../shared/Card';
 import { Button } from '../shared/Button';
 import { cn } from '../../utils/cn';
+import { api } from '../../lib/api-client';
+
 export const ResumeInput = ({ value, onChange, error }) => {
     const [isFocused, setIsFocused] = useState(false);
+    const [isUploading, setIsUploading] = useState(false);
+    const [uploadStatus, setUploadStatus] = useState('');
+    const [uploadError, setUploadError] = useState('');
+
     const onDrop = useCallback(async (acceptedFiles) => {
+        setUploadError('');
         let combinedText = '';
         for (const file of acceptedFiles) {
-            if (file.name.endsWith('.pdf')) {
-                combinedText += `\n--- ${file.name} ---\n[PDF Content Mock: ${file.name}]\n`;
+            const fileNameLower = file.name.toLowerCase();
+            if (fileNameLower.endsWith('.pdf')) {
+                try {
+                    setIsUploading(true);
+                    setUploadStatus(`Parsing ${file.name}...`);
+                    const result = await api.uploadResume(file);
+                    if (result && result.text) {
+                        combinedText += `\n--- ${file.name} ---\n${result.text.trim()}\n`;
+                    }
+                } catch (err) {
+                    console.error('Failed to parse PDF:', err);
+                    setUploadError(err.message || `Failed to extract text from ${file.name}`);
+                } finally {
+                    setIsUploading(false);
+                    setUploadStatus('');
+                }
             } else {
                 const text = await new Promise((resolve) => {
                     const reader = new FileReader();
@@ -20,14 +41,16 @@ export const ResumeInput = ({ value, onChange, error }) => {
                     reader.readAsText(file);
                 });
                 if (typeof text === 'string') {
-                    combinedText += `\n--- ${file.name} ---\n${text}\n`;
+                    combinedText += `\n--- ${file.name} ---\n${text.trim()}\n`;
                 }
             }
         }
         if (combinedText) {
-            onChange(combinedText.trim());
+            const currentVal = value ? value + '\n' : '';
+            onChange((currentVal + combinedText).trim());
         }
-    }, [onChange]);
+    }, [onChange, value]);
+
     const { getRootProps, getInputProps, isDragActive } = useDropzone({
         onDrop,
         accept: {
@@ -35,6 +58,7 @@ export const ResumeInput = ({ value, onChange, error }) => {
             'application/pdf': ['.pdf']
         }
     });
+
     const handlePasteFromClipboard = async () => {
         try {
             const text = await navigator.clipboard.readText();
@@ -47,10 +71,25 @@ export const ResumeInput = ({ value, onChange, error }) => {
     
     const handleFileUpload = async (e) => {
         const files = Array.from(e.target.files || []);
+        setUploadError('');
         let combinedText = '';
         for (const file of files) {
-            if (file.name.endsWith('.pdf')) {
-                combinedText += `\n--- ${file.name} ---\n[PDF Content Mock: ${file.name}]\n`;
+            const fileNameLower = file.name.toLowerCase();
+            if (fileNameLower.endsWith('.pdf')) {
+                try {
+                    setIsUploading(true);
+                    setUploadStatus(`Parsing ${file.name}...`);
+                    const result = await api.uploadResume(file);
+                    if (result && result.text) {
+                        combinedText += `\n--- ${file.name} ---\n${result.text.trim()}\n`;
+                    }
+                } catch (err) {
+                    console.error('Failed to parse PDF:', err);
+                    setUploadError(err.message || `Failed to extract text from ${file.name}`);
+                } finally {
+                    setIsUploading(false);
+                    setUploadStatus('');
+                }
             } else {
                 const text = await new Promise((resolve) => {
                     const reader = new FileReader();
@@ -58,7 +97,7 @@ export const ResumeInput = ({ value, onChange, error }) => {
                     reader.readAsText(file);
                 });
                 if (typeof text === 'string') {
-                    combinedText += `\n--- ${file.name} ---\n${text}\n`;
+                    combinedText += `\n--- ${file.name} ---\n${text.trim()}\n`;
                 }
             }
         }
@@ -75,8 +114,14 @@ export const ResumeInput = ({ value, onChange, error }) => {
           <FileText className="w-5 h-5 text-zinc-700 dark:text-zinc-300"/>
           Resume
         </h2>
-        <div className="flex gap-2">
-            <Button variant="ghost" size="sm" onClick={handlePasteFromClipboard} className="text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100">
+        <div className="flex gap-2 items-center">
+            {isUploading && (
+              <span className="text-xs text-blue-600 dark:text-blue-400 flex items-center gap-1.5 animate-pulse">
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                {uploadStatus || 'Parsing PDF...'}
+              </span>
+            )}
+            <Button variant="ghost" size="sm" onClick={handlePasteFromClipboard} className="text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100" disabled={isUploading}>
             <Clipboard className="w-4 h-4 mr-2"/>
             Paste
             </Button>
@@ -97,8 +142,9 @@ export const ResumeInput = ({ value, onChange, error }) => {
       </div>
 
       <div className="mt-2 flex justify-between items-center text-xs">
-        <span className={cn(error ? "text-red-500" : "text-gray-500")}>
-          {error || 'Supports pasting text or uploading .txt / .pdf files'}
+        <span className={cn(uploadError || error ? "text-red-500 flex items-center gap-1" : "text-gray-500")}>
+          {uploadError && <AlertCircle className="w-3.5 h-3.5 inline mr-1 flex-shrink-0" />}
+          {uploadError || error || 'Supports pasting text or uploading .txt / .pdf files'}
         </span>
         <span className={cn("font-medium", value.length > 10000 ? "text-red-500" : "text-gray-400")}>
           {value.length}/10000

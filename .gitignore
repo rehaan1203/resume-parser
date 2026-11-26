@@ -1,16 +1,18 @@
-# ========================
-# GLOBAL / ENVIRONMENTS
-# ========================
+# ==========================================
+# ENVIRONMENTS & VIRTUAL ENVS
+# ==========================================
 venv/
+.venv/
+env/
+ENV/
 .env
 .env.*
 !.env.example
-.DS_Store
 *.pem
 
-# ========================
-# BACKEND (Python/FastAPI)
-# ========================
+# ==========================================
+# BACKEND (Python / FastAPI)
+# ==========================================
 __pycache__/
 *.py[cod]
 *$py.class
@@ -21,43 +23,98 @@ dist/
 .eggs/
 *.egg-info/
 *.egg
+
+# Testing & Type Checking Caches
 .pytest_cache/
+.mypy_cache/
+.ruff_cache/
 htmlcov/
 .coverage
 .coverage.*
 coverage.xml
+.dmypy.json
+dmypy.json
+
+# Test Artifacts, Evaluation Dumps & Scratch Scripts
+*_results.json
+*_report.json
+test-results/
+backend/scripts/*_eval_*.json
+backend/scripts/*_results.json
+backend/scripts/*_test*.py
+scratch/
+scratch_*.py
+tmp_*.py
+temp_*.py
+
+# Database & SQLite
 *.sqlite
 *.sqlite3
 *.db
 
-# ========================
-# FRONTEND (Next.js/Node)
-# ========================
+# ==========================================
+# FRONTEND (Next.js / Node)
+# ==========================================
 node_modules/
+.next/
+.next/cache/
+out/
+.turbo/
 .pnp
 .pnp.js
 /coverage/
-.next/
-out/
+coverage/
+*.tsbuildinfo
+next-env.d.ts
+
+# Package Manager Logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 .vercel/
-*.tsbuildinfo
-next-env.d.ts
 
-# ========================
-# LOGS & DATA
-# ========================
+# ==========================================
+# LOGS, DATA & TEMPORARY FILES
+# ==========================================
 logs/
 *.log
 data/
 mock_data/
+*.tmp
+*.temp
 
-# ========================
-# IDE
-# ========================
-.vscode/
+# Office & Document Lock Files (Temporary parsing locks)
+~$*.docx
+~$*.doc
+~$*.xlsx
+~$*.pptx
+
+# ==========================================
+# OS & SYSTEM ARTIFACTS
+# ==========================================
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows & OneDrive
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+*Zone.Identifier
+
+# ==========================================
+# IDE & EDITORS
+# ==========================================
 .idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/launch.json
 *.swp
+*.swo
+*.sublime-project
+*.sublime-workspace
+.cursor/

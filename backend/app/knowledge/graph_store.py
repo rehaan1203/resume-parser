@@ -91,9 +91,12 @@ class SkillDependencyGraph:
         if clean in self.nodes:
             return self.nodes[clean]
 
-        # Substring / alias search
+        # Boundary-aware keyword and alias search to prevent short acronym false matches (e.g. 'go' in 'django')
+        from app.knowledge.crag_evaluator import word_boundary_match
         for node_id, node in self.nodes.items():
-            if node_id in clean or clean in node_id or skill_name.strip().lower() in node.name.lower():
+            clean_node = node_id.replace("_", " ")
+            clean_skill = skill_name.strip().lower()
+            if word_boundary_match(node_id, clean) or word_boundary_match(clean, node_id) or word_boundary_match(clean_node, clean_skill) or word_boundary_match(clean_skill, node.name.lower()):
                 return node
         return None
 

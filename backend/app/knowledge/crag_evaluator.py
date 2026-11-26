@@ -4,10 +4,28 @@ Active self-evaluation layer that grades retrieved learning resources against ca
 skill gap intent, filters noisy or misaligned candidates, transforms struggling queries,
 and ensures roadmap recommendations remain strictly grounded and hallucination-free.
 """
+import re
 from typing import List, Tuple, Optional, Set
 from app.knowledge.models import VerifiedResource, ResourceSearchResult, CRAGGrade
 from app.utils.logger import logger
 from app.config import settings
+
+
+def word_boundary_match(term: str, target: str) -> bool:
+    """Check if term matches target on whole word boundaries, preserving tech symbols like +, #.
+    Zero hardcoded language names; purely regex boundary based.
+    """
+    if not term or not target:
+        return False
+    t_clean = term.strip().lower()
+    tgt_clean = target.strip().lower()
+    if not t_clean or not tgt_clean:
+        return False
+    if t_clean == tgt_clean:
+        return True
+    pattern = rf"(?<![a-z0-9+#]){re.escape(t_clean)}(?![a-z0-9+#])"
+    return bool(re.search(pattern, tgt_clean))
+
 
 class CRAGEvaluator:
     """Evaluates and grades candidate resources to guarantee retrieval accuracy."""
@@ -83,23 +101,35 @@ class CRAGEvaluator:
         score = 0.0
         reasons = []
 
-        # 1. Direct skill tag match (strongest signal)
-        if any(clean_query in s or s in clean_query for s in res_skills):
+        # 1. Direct skill tag match (strongest signal) - uses word boundary matching to eliminate false positives (e.g. 'go' in 'django')
+        exact_tag = any(
+            word_boundary_match(clean_query, s) or word_boundary_match(s, clean_query)
+            for s in res_skills
+        )
+        if exact_tag:
             score += 0.50
             reasons.append("Exact skill tag overlap")
-        elif any(part in " ".join(res_skills) for part in clean_query.split()):
-            score += 0.30
-            reasons.append("Partial skill tag overlap")
+        else:
+            query_tokens = [tok for tok in clean_query.split() if len(tok) >= 2]
+            partial_tag = any(
+                any(word_boundary_match(tok, s) for s in res_skills)
+                for tok in query_tokens
+            )
+            if partial_tag:
+                score += 0.30
+                reasons.append("Partial skill tag overlap")
 
-        # 2. Title & Description keyword density
-        if clean_query in res_title:
+        # 2. Title & Description keyword density with boundary matching
+        if word_boundary_match(clean_query, res_title):
             score += 0.30
             reasons.append("Skill keyword present in resource title")
-        elif any(part in res_title for part in clean_query.split() if len(part) > 2):
-            score += 0.15
-            reasons.append("Token match in resource title")
+        else:
+            title_tokens = [tok for tok in clean_query.split() if len(tok) > 2]
+            if any(word_boundary_match(tok, res_title) for tok in title_tokens):
+                score += 0.15
+                reasons.append("Token match in resource title")
 
-        if clean_query in res_desc:
+        if word_boundary_match(clean_query, res_desc):
             score += 0.20
             reasons.append("Skill keyword present in description")
 
@@ -110,6 +140,9 @@ class CRAGEvaluator:
             if norm_tgt == norm_res:
                 score += 0.15
                 reasons.append("Domain match")
+            elif norm_tgt not in ("generic", "general", "unknown") and norm_res not in ("generic", "general", "unknown"):
+                score -= 0.25
+                reasons.append("Cross-domain conflict penalty")
             else:
                 score -= 0.10
                 reasons.append("Domain mismatch penalty")

@@ -28,12 +28,19 @@ def truncate_to_token_limit(text: str, max_tokens: int = 8000) -> str:
     
     return truncated.strip()
 
-def calculate_cost(tokens: int, model: str = "gemini-2.5-flash") -> float:
-    """Calculate approximate cost based on token usage."""
+def calculate_cost(tokens: int, model: str = "llama-3.3-70b-versatile") -> float:
+    """Calculate approximate cost based on token usage across supported LLM providers."""
     # Pricing (approximate per 1M tokens)
     pricing = {
-        "gemini-2.5-flash": 0.30,  # Input
-        "text-embedding-004": 0.10  # Input
+        # Groq
+        "llama-3.3-70b-versatile": 0.59,
+        "mixtral-8x7b-32768": 0.27,
+        # Mistral
+        "mistral-small-latest": 0.20,
+        "codestral-latest": 0.30,
+        # Google Gemini (Optional)
+        "gemini-2.5-flash": 0.30,
+        "text-embedding-004": 0.10
     }
     cost_per_1m = pricing.get(model, 0.50)
     return (tokens / 1_000_000) * cost_per_1m
